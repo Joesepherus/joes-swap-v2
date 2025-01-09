@@ -8,31 +8,57 @@ import {ERC20Mock} from "./ERC20Mock.sol";
 
 contract JoesSwapV2Test is Test {
     JoesSwapV2 joesSwap2;
-    IERC20 token0;
-    IERC20 token1;
+    ERC20Mock token0;
+    ERC20Mock token1;
 
     uint256 immutable PRECISION = 1e18;
 
+    address owner = address(0x4eFF9F6DBb11A3D9a18E92E35BD4D54ac4E1533a);
+
     function setUp() public {
-        token0 = new ERC20Mock("token0", "T0");
-        token0 = new ERC20Mock("token1", "T1");
+        token0 = new ERC20Mock("Token0", "T0");
+        token1 = new ERC20Mock("Token1", "T1");
         joesSwap2 = new JoesSwapV2(address(token0), address(token1));
+
+        uint256 STARTING_AMOUNT = 1_000_000;
+
+        vm.deal(owner, STARTING_AMOUNT);
+
+        token0.mint(owner, STARTING_AMOUNT);
+        token1.mint(owner, STARTING_AMOUNT);
+
+        vm.startPrank(owner);
+        token0.approve(address(joesSwap2), STARTING_AMOUNT);
+        token1.approve(address(joesSwap2), STARTING_AMOUNT);
+        vm.stopPrank();
+        uint256 token0Balance = token0.balanceOf(address(joesSwap2));
+        uint256 token1Balance = token1.balanceOf(address(joesSwap2));
+        console.log("token0Balance", token0Balance);
+        console.log("token1Balance", token1Balance);
+        uint256 token0Owner = token0.balanceOf(owner);
+        uint256 token1Owner = token1.balanceOf(owner);
+        console.log("token0Owner", token0Owner);
+        console.log("token1Owner", token1Owner);
     }
 
     function test_addLiquidity() public {
         uint256 amount0 = 500;
         uint256 amount1 = 100;
-
+        vm.prank(owner);
         joesSwap2.addLiquidity(amount0, amount1);
 
         assertEq(joesSwap2.reserve0(), amount0);
         assertEq(joesSwap2.reserve1(), amount1);
-        assertEq(joesSwap2.liquidity(), sqrt(amount0 * amount1 * PRECISION * PRECISION));
+        assertEq(
+            joesSwap2.liquidity(),
+            sqrt(amount0 * amount1 * PRECISION * PRECISION)
+        );
     }
 
     function test_removeLiquidity() public {
         uint256 amount0 = 1000;
         uint256 amount1 = 100;
+        vm.prank(owner);
         joesSwap2.addLiquidity(amount0, amount1);
 
         uint256 removeLiquidityAmount = 100 * PRECISION;
@@ -40,7 +66,10 @@ contract JoesSwapV2Test is Test {
 
         joesSwap2.removeLiquidity(removeLiquidityAmount);
 
-        assertEq(joesSwap2.liquidity(), liquidityBefore - removeLiquidityAmount );
+        assertEq(
+            joesSwap2.liquidity(),
+            liquidityBefore - removeLiquidityAmount
+        );
         assertEq(joesSwap2.reserve0(), 684);
         assertEq(joesSwap2.reserve1(), 69);
     }
@@ -48,6 +77,7 @@ contract JoesSwapV2Test is Test {
     function test_removeLiquidityAll() public {
         uint256 amount0 = 1000;
         uint256 amount1 = 100;
+        vm.prank(owner);
         joesSwap2.addLiquidity(amount0, amount1);
         uint256 liquidityBefore = joesSwap2.liquidity();
         joesSwap2.removeLiquidity(liquidityBefore);
@@ -58,16 +88,18 @@ contract JoesSwapV2Test is Test {
     }
 
     function test_swap() public {
-        uint256 amount0 = 520;
-        uint256 amount1 = 90;
+        uint256 amount0 = 1000;
+        uint256 amount1 = 100;
+        vm.prank(owner);
         joesSwap2.addLiquidity(amount0, amount1);
 
-        uint256 swapAmount = 100;
+        uint256 swapAmount = 124;
         uint256 liquidityBefore = joesSwap2.liquidity();
         uint256 reserve0Before = joesSwap2.reserve0();
         uint256 reserve1Before = joesSwap2.reserve1();
 
-        joesSwap2.swap(100);
+        vm.prank(owner);
+        joesSwap2.swap(swapAmount);
 
         uint256 reserve1AfterExpected = (reserve0Before * reserve1Before) /
             (reserve0Before + swapAmount);
@@ -86,4 +118,3 @@ contract JoesSwapV2Test is Test {
         }
     }
 }
-

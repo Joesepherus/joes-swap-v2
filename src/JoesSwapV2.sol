@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
+import {Test, console} from "forge-std/Test.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 contract JoesSwapV2 {
@@ -29,31 +30,85 @@ contract JoesSwapV2 {
         uint256 newLiquidity = sqrt(amount0Scaled * amount1Scaled);
 
         liquidity += newLiquidity;
+
+        token0.transferFrom(msg.sender, address(this), amount0);
+        token1.transferFrom(msg.sender, address(this), amount1);
     }
 
     function removeLiquidity(uint256 liquidityToRemove) public {
-        uint256 amount0 = (reserve0* liquidityToRemove) / liquidity;
-        uint256 amount1 = (reserve1* liquidityToRemove) / liquidity;
+        uint256 amount0 = (reserve0 * liquidityToRemove) / liquidity;
+        uint256 amount1 = (reserve1 * liquidityToRemove) / liquidity;
 
         reserve0 -= amount0;
         reserve1 -= amount1;
 
         liquidity -= liquidityToRemove;
+        token0.transfer(msg.sender, amount0);
+        token1.transfer(msg.sender, amount1);
+    }
+
+    function roundUpToNearestWhole(
+        uint256 value
+    ) public pure returns (uint256) {
+        // Add half of 1e18 for rounding, then divide and multiply to get the rounded value
+        return ((value + 5e17) / 1e18) * 1e18;
+    }
+
+    function roundDownToNearestWhole(
+        uint256 value
+    ) public pure returns (uint256) {
+        // Divide and multiply to get the rounded down value
+        return (value / 1e18) * 1e18;
     }
 
     function swap(uint256 amountIn) public {
-        uint256 amountOut = getAmountOut(amountIn);
+        uint256 scaledAmountIn = amountIn * PRECISION;
 
-        reserve0 += amountIn;
+        uint256 amountOutScaled = getAmountOut(scaledAmountIn);
+        console.log("amountOutScaled", amountOutScaled);
+        console.log("MAX", type(uint256).max);
+        if (amountOutScaled < 1e18) revert("Amount out too small");
+        uint256 amountOutRounded = roundDownToNearestWhole(amountOutScaled);
+        uint256 amountOut = amountOutRounded / PRECISION;
+        console.log("amountOut", amountOut);
+
+        uint256 amountInCorrect = getAmountIn(amountOutRounded);
+        uint256 amountInRouded = roundDownToNearestWhole(amountInCorrect);
+        uint256 amountInSlippageFree = amountInRouded / PRECISION;
+        console.log("amountInCorrect", amountInCorrect);
+        console.log("amountInRouded", amountInRouded);
+        console.log("amountInSlippageFree", amountInSlippageFree);
+
+        reserve0 += scaledAmountIn / PRECISION;
         reserve1 -= amountOut;
+
+        if (amountOut <= 0) revert("Invalid output amount");
+
+        token0.transferFrom(msg.sender, address(this), amountInSlippageFree);
+        token1.transfer(msg.sender, amountOut);
     }
 
     function getAmountOut(uint256 amountIn) internal view returns (uint256) {
-        uint k = reserve0 * reserve1;
-        uint256 newReserve0 = reserve0 + amountIn;
+        uint k = reserve0 * PRECISION * reserve1 * PRECISION;
+        uint256 newReserve0 = reserve0 * PRECISION + amountIn;
         uint256 newReserve1 = k / newReserve0;
 
-        return reserve1 - newReserve1;
+        console.log("k", k);
+        console.log("newReserve0", newReserve0);
+        console.log("newReserve1", newReserve1);
+        console.log(
+            "reserve1 * PRECISION - newReserve1",
+            reserve1 * PRECISION - newReserve1
+        );
+        return reserve1 * PRECISION - newReserve1;
+    }
+
+    function getAmountIn(uint256 amountOut) internal view returns (uint256) {
+        uint k = reserve0 * PRECISION * reserve1 * PRECISION;
+        uint256 newReserve1 = reserve1 * PRECISION - amountOut;
+        uint256 newReserve0 = k / newReserve1;
+
+        return newReserve0 - reserve0 * PRECISION;
     }
 
     function sqrt(uint256 x) internal pure returns (uint256 y) {
