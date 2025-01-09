@@ -68,7 +68,7 @@ contract JoesSwapV2 {
         console.log("amountOutScaled", amountOutScaled);
         console.log("MAX", type(uint256).max);
         if (amountOutScaled < 1e18) revert("Amount out too small");
-        uint256 amountOutRounded = roundDownToNearestWhole(amountOutScaled);
+        uint256 amountOutRounded = roundUpToNearestWhole(amountOutScaled);
         uint256 amountOut = amountOutRounded / PRECISION;
         console.log("amountOut", amountOut);
 
@@ -86,6 +86,27 @@ contract JoesSwapV2 {
 
         token0.transferFrom(msg.sender, address(this), amountInSlippageFree);
         token1.transfer(msg.sender, amountOut);
+    }
+
+    function swap2(uint256 amountOut, uint256 amountInMax) public {
+        uint256 scaledAmountOut = amountOut * PRECISION;
+        console.log("where do we get");
+        uint256 amountInScaled = getAmountIn(scaledAmountOut);
+        uint256 amountInRounded = roundDownToNearestWhole(amountInScaled);
+        uint256 amountIn = amountInScaled / PRECISION;
+        console.log("amountOut", amountOut);
+        console.log("amountIn", amountIn);
+        if(amountIn > amountInMax) {
+            revert("AmountIn is bigger than amountInMax");
+        }
+
+        uint256 amountOutCorrect = getAmountOut(amountInRounded); 
+        uint256 amountOutRounded = roundUpToNearestWhole(amountOutCorrect);
+        uint256 amountOutSlippageFree = amountOutRounded / PRECISION;
+        console.log("amountOutCorrect", amountOutCorrect);
+        console.log("amountOutRounded", amountOutRounded);
+        console.log("amountOutSlippageFree", amountOutSlippageFree);
+
     }
 
     function getAmountOut(uint256 amountIn) internal view returns (uint256) {
