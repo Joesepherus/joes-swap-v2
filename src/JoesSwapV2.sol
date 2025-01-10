@@ -15,6 +15,10 @@ contract JoesSwapV2 {
 
     uint256 immutable PRECISION = 1e18;
 
+    event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
+    event RemoveLiquidity(address sender, uint256 liquidityToRemove);
+    event Swap(address sender, uint256 amount0, uint256 amount1);
+
     constructor(address _token0, address _token1) {
         token0 = IERC20(_token0);
         token1 = IERC20(_token1);
@@ -33,6 +37,7 @@ contract JoesSwapV2 {
 
         token0.transferFrom(msg.sender, address(this), amount0);
         token1.transferFrom(msg.sender, address(this), amount1);
+        emit AddLiquidity(msg.sender, amount0, amount1);
     }
 
     function removeLiquidity(uint256 liquidityToRemove) public {
@@ -45,6 +50,8 @@ contract JoesSwapV2 {
         liquidity -= liquidityToRemove;
         token0.transfer(msg.sender, amount0);
         token1.transfer(msg.sender, amount1);
+
+        emit RemoveLiquidity(msg.sender, liquidityToRemove);
     }
 
     function roundUpToNearestWhole(
