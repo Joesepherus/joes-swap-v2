@@ -3,8 +3,9 @@ pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
-contract JoesSwapV2 {
+contract JoesSwapV2 is ReentrancyGuard{
     IERC20 public token0;
     IERC20 public token1;
 
@@ -79,7 +80,7 @@ contract JoesSwapV2 {
         return (value / 1e18) * 1e18;
     }
 
-    function swap(uint256 amountIn) public {
+    function swap(uint256 amountIn) public nonReentrant {
         uint256 scaledAmountIn = amountIn * PRECISION;
 
         uint256 amountOutScaled = getAmountOut(scaledAmountIn);
@@ -100,7 +101,7 @@ contract JoesSwapV2 {
         emit Swap(msg.sender, amountInSlippageFree, amountOut);
     }
 
-    function swap2(uint256 amountOut, uint256 amountInMax) public {
+    function swap2(uint256 amountOut, uint256 amountInMax) public nonReentrant {
         uint256 scaledAmountOut = amountOut * PRECISION;
         uint256 amountInScaled = getAmountIn(scaledAmountOut);
         console.log("amountInScaled", amountInScaled);
