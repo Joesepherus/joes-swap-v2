@@ -1,66 +1,22 @@
-## Foundry
+# Joes Swap v2
+Upgraded version of Joes Swap v1.
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+## What got introduced in v2
+1. Real ERC20 tokens as pairs
+2. Swap the other way around
+3. Fix the slippage - good samaritan
+4. Add possibility to set maxAmount of token1 for amount of token0 and vice versa
 
-Foundry consists of:
+This is a very basic implementation of a Decentralized Exchange using Solidity and Foundry.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Where this can be improved
+1. Add real ERC20 tokens as pairs
+2. Add swap the other way around
+3. Make the sqrt function more accurate
+4. Hand out LP tokens to liquidity providers
+5. Fix the slippage
+6. Add possibility to set maxAmount of token1 for amount of token0
+7. Add events and errors
+8. Add checks
 
-## Documentation
 
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
