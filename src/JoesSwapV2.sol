@@ -18,6 +18,7 @@ contract JoesSwapV2 {
     event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
     event RemoveLiquidity(address sender, uint256 liquidityToRemove);
     event Swap(address sender, uint256 amount0, uint256 amount1);
+    event Swap2(address sender, uint256 amount0, uint256 amount1);
 
     constructor(address _token0, address _token1) {
         token0 = IERC20(_token0);
@@ -57,9 +58,19 @@ contract JoesSwapV2 {
     function roundUpToNearestWhole(
         uint256 value
     ) public pure returns (uint256) {
-        // Add half of 1e18 for rounding, then divide and multiply to get the rounded value
-        return ((value + 5e17) / 1e18) * 1e18;
+        // If there's any remainder when dividing by 1e18, round up
+        if (value % 1e18 != 0) {
+            return ((value / 1e18) + 1) * 1e18;
+        }
+        return value;
     }
+
+    //    function roundUpToNearestWhole(
+    //        uint256 value
+    //    ) public pure returns (uint256) {
+    //        // Add half of 1e18 for rounding, then divide and multiply to get the rounded value
+    //        return ((value + 5e17) / 1e18) * 1e18;
+    //    }
 
     function roundDownToNearestWhole(
         uint256 value
@@ -77,7 +88,7 @@ contract JoesSwapV2 {
         uint256 amountOut = amountOutRounded / PRECISION;
 
         uint256 amountInCorrect = getAmountIn(amountOutRounded);
-        uint256 amountInRouded = roundDownToNearestWhole(amountInCorrect);
+        uint256 amountInRouded = roundUpToNearestWhole(amountInCorrect);
         uint256 amountInSlippageFree = amountInRouded / PRECISION;
         reserve0 += scaledAmountIn / PRECISION;
         reserve1 -= amountOut;
@@ -86,6 +97,7 @@ contract JoesSwapV2 {
 
         token0.transferFrom(msg.sender, address(this), amountInSlippageFree);
         token1.transfer(msg.sender, amountOut);
+        emit Swap(msg.sender, amountInSlippageFree, amountOut);
     }
 
     function swap2(uint256 amountOut, uint256 amountInMax) public {
@@ -100,6 +112,11 @@ contract JoesSwapV2 {
         uint256 amountOutCorrect = getAmountOut(amountInRounded);
         uint256 amountOutRounded = roundUpToNearestWhole(amountOutCorrect);
         uint256 amountOutSlippageFree = amountOutRounded / PRECISION;
+
+        token0.transferFrom(msg.sender, address(this), amountOutCorrect);
+        token1.transfer(msg.sender, amountIn);
+
+        emit Swap2(msg.sender, amountIn, amountOutSlippageFree);
     }
 
     function getAmountOut(uint256 amountIn) internal view returns (uint256) {
