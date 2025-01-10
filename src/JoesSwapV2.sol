@@ -57,7 +57,7 @@ contract JoesSwapV2 {
 
     function roundUpToNearestWhole(
         uint256 value
-    ) public pure returns (uint256) {
+    ) internal pure returns (uint256) {
         // If there's any remainder when dividing by 1e18, round up
         if (value % 1e18 != 0) {
             return ((value / 1e18) + 1) * 1e18;
@@ -74,7 +74,7 @@ contract JoesSwapV2 {
 
     function roundDownToNearestWhole(
         uint256 value
-    ) public pure returns (uint256) {
+    ) internal pure returns (uint256) {
         // Divide and multiply to get the rounded down value
         return (value / 1e18) * 1e18;
     }
@@ -103,18 +103,24 @@ contract JoesSwapV2 {
     function swap2(uint256 amountOut, uint256 amountInMax) public {
         uint256 scaledAmountOut = amountOut * PRECISION;
         uint256 amountInScaled = getAmountIn(scaledAmountOut);
-        uint256 amountInRounded = roundDownToNearestWhole(amountInScaled);
-        uint256 amountIn = amountInScaled / PRECISION;
+        console.log("amountInScaled", amountInScaled);
+        uint256 amountInRounded = roundUpToNearestWhole(amountInScaled);
+        console.log("amountInRounded", amountInRounded);
+        uint256 amountIn = amountInRounded / PRECISION;
         if (amountIn > amountInMax) {
             revert("AmountIn is bigger than amountInMax");
         }
 
         uint256 amountOutCorrect = getAmountOut(amountInRounded);
-        uint256 amountOutRounded = roundUpToNearestWhole(amountOutCorrect);
+        uint256 amountOutRounded = roundDownToNearestWhole(amountOutCorrect);
         uint256 amountOutSlippageFree = amountOutRounded / PRECISION;
 
-        token0.transferFrom(msg.sender, address(this), amountOutCorrect);
-        token1.transfer(msg.sender, amountIn);
+        console.log("pool token0 balance", token0.balanceOf(address(this)));
+        console.log("pool token1 balance", token1.balanceOf(address(this)));
+        console.log("msg sender token0 balance", token0.balanceOf(msg.sender));
+        console.log("msg sender token1 balance", token1.balanceOf(msg.sender));
+        token1.transferFrom(msg.sender, address(this), amountOutSlippageFree);
+        token0.transfer(msg.sender, amountIn);
 
         emit Swap2(msg.sender, amountIn, amountOutSlippageFree);
     }
@@ -142,5 +148,23 @@ contract JoesSwapV2 {
             y = z;
             z = (x / z + z) / 2;
         }
+    }
+
+    uint256 constant Q96 = 2 ** 96;
+
+    function computeSqrtPriceX96(
+        uint256 reserve0,
+        uint256 reserve1
+    ) public pure returns (uint256) {
+        require(
+            reserve0 > 0 && reserve1 > 0,
+            "Reserves must be greater than zero"
+        );
+
+        uint256 ratio = (reserve1 * 1e18) / reserve0; // Scale up for precision
+        uint256 sqrtRatio = sqrt(ratio); // Take the square root
+        uint256 sqrtPriceX96 = (sqrtRatio * Q96) / 1e9; // Adjust the scale to Q96
+
+        return sqrtPriceX96;
     }
 }
