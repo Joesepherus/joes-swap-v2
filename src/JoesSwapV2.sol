@@ -30,6 +30,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     event Swap(address sender, uint256 amount0, uint256 amount1);
     event Swap2(address sender, uint256 amount0, uint256 amount1);
     event WithdrawFees(address sender, uint256 feeAmount);
+
     error InsufficentFeesBalance();
     error InsufficentLiquidity();
 
@@ -101,23 +102,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         lpBalances[msg.sender] -= liquidityToRemove;
 
         emit RemoveLiquidity(msg.sender, liquidityToRemove);
-    }
-
-    function roundUpToNearestWhole(
-        uint256 value
-    ) internal pure returns (uint256) {
-        // If there's any remainder when dividing by 1e18, round up
-        if (value % 1e18 != 0) {
-            return ((value / 1e18) + 1) * 1e18;
-        }
-        return value;
-    }
-
-    function roundDownToNearestWhole(
-        uint256 value
-    ) internal pure returns (uint256) {
-        // Divide and multiply to get the rounded down value
-        return (value / 1e18) * 1e18;
     }
 
     function swap(uint256 amountIn) public nonReentrant {
@@ -203,6 +187,23 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         uint256 newReserve0 = k / newReserve1;
 
         return newReserve0 - reserve0 * PRECISION;
+    }
+
+    function roundUpToNearestWhole(
+        uint256 value
+    ) internal pure returns (uint256) {
+        // If there's any remainder when dividing by 1e18, round up
+        if (value % 1e18 != 0) {
+            return ((value / 1e18) + 1) * 1e18;
+        }
+        return value;
+    }
+
+    function roundDownToNearestWhole(
+        uint256 value
+    ) internal pure returns (uint256) {
+        // Divide and multiply to get the rounded down value
+        return (value / 1e18) * 1e18;
     }
 
     function sqrt(uint256 x) internal pure returns (uint256 y) {
