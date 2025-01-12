@@ -21,6 +21,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
     uint256 public accumulatedFeePerLiquidityUnit;
 
+    bool public poolInitialized = false;
+
     mapping(address => uint256) public lpBalances;
     mapping(address => uint256) public userEntryFeePerLiquidityUnit;
 
@@ -33,6 +35,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
     error InsufficentFeesBalance();
     error InsufficentLiquidity();
+    error PoolAlreadyInitialized();
 
     constructor(address _token0, address _token1) Ownable(msg.sender) {
         token0 = IERC20(_token0);
@@ -43,6 +46,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         uint256 amount0,
         uint256 amount1
     ) public onlyOwner {
+        if(poolInitialized) revert PoolAlreadyInitialized(); 
         uint256 amount0Scaled = amount0 * PRECISION;
         uint256 amount1Scaled = amount1 * PRECISION;
         uint256 newLiquidity = sqrt(amount0Scaled * amount1Scaled);
@@ -57,6 +61,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         userEntryFeePerLiquidityUnit[msg.sender] = currentFeePerUnit;
         liquidity += newLiquidity;
         lpBalances[msg.sender] += newLiquidity;
+        poolInitialized = true;
 
         emit PoolInitialized(msg.sender, amount0, amount1);
     }

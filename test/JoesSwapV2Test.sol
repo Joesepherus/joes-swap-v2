@@ -48,6 +48,7 @@ contract JoesSwapV2Test is Test {
         uint256 amount1 = 1000;
         vm.prank(owner);
         joesSwapV2.initializePoolLiquidity(amount0, amount1);
+        console.log("initialized", joesSwapV2.poolInitialized());
     }
 
     function test_initializePoolLiquidityAsNotOwner() public {
@@ -83,6 +84,17 @@ contract JoesSwapV2Test is Test {
 
         vm.prank(owner2);
         vm.expectRevert();
+        joesSwapV2.initializePoolLiquidity(amount0, amount1);
+    }
+
+    function test_initializePoolTwice() public {
+        uint256 amount0 = 10000;
+        uint256 amount1 = 1000;
+
+        console.log("initialized", joesSwapV2.poolInitialized());
+        console.log("liquidity", joesSwapV2.liquidity());
+        vm.prank(owner);
+       vm.expectRevert();
         joesSwapV2.initializePoolLiquidity(amount0, amount1);
     }
 
