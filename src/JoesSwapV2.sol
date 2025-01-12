@@ -18,15 +18,18 @@ contract JoesSwapV2 is ReentrancyGuard {
 
     uint256 immutable FEE = 3;
 
+    uint256 public accumulatedFeePerLiquidityUnit;
+
     mapping(address => uint256) public lpBalances;
-    mapping(address => uint256) public feePool0;
-    mapping(address => uint256) public feePool1;
+    mapping(address => uint256) public userEntryFeePerLiquidityUnit;
 
     event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
     event RemoveLiquidity(address sender, uint256 liquidityToRemove);
     event Swap(address sender, uint256 amount0, uint256 amount1);
     event Swap2(address sender, uint256 amount0, uint256 amount1);
     event WithdrawFees(address sender, uint256 feeAmount);
+    error InsufficentFeesBalance();
+    error InsufficentLiquidity();
 
     constructor(address _token0, address _token1) {
         token0 = IERC20(_token0);
@@ -48,6 +51,8 @@ contract JoesSwapV2 is ReentrancyGuard {
         reserve0 += amount0;
         reserve1 += amount1;
 
+        uint256 currentFeePerUnit = accumulatedFeePerLiquidityUnit;
+        userEntryFeePerLiquidityUnit[msg.sender] = currentFeePerUnit;
         liquidity += newLiquidity;
         lpBalances[msg.sender] += newLiquidity;
 
@@ -56,17 +61,21 @@ contract JoesSwapV2 is ReentrancyGuard {
 
     function removeLiquidity() public nonReentrant {
         uint256 liquidityToRemove = lpBalances[msg.sender];
-        if(liquidityToRemove <= 0) revert("No liquidity to remove");
+        if(liquidityToRemove <= 0) {
+            revert InsufficentLiquidity();
+        }
         uint256 amount0 = (reserve0 * liquidityToRemove) / liquidity;
         uint256 amount1 = (reserve1 * liquidityToRemove) / liquidity;
 
         token0.transfer(msg.sender, amount0);
+
         token1.transfer(msg.sender, amount1);
 
         reserve0 -= amount0;
         reserve1 -= amount1;
 
         liquidity -= liquidityToRemove;
+        lpBalances[msg.sender] -= liquidityToRemove;
 
         emit RemoveLiquidity(msg.sender, liquidityToRemove);
     }
@@ -109,9 +118,7 @@ contract JoesSwapV2 is ReentrancyGuard {
         token0.transferFrom(msg.sender, address(this), amountInSlippageFree);
         token1.transfer(msg.sender, amountOut);
 
-        feePool0[msg.sender] =
-            roundUpToNearestWhole(scaledAmountIn - amountInCorrect) /
-            PRECISION;
+        accumulatedFeePerLiquidityUnit += (feeAmount * PRECISION) / liquidity;
 
         reserve0 += scaledAmountIn / PRECISION;
         reserve1 -= amountOut;
@@ -139,10 +146,7 @@ contract JoesSwapV2 is ReentrancyGuard {
         token0.transferFrom(msg.sender, address(this), amountIn);
         token1.transfer(msg.sender, amountOutSlippageFree);
 
-        feePool0[msg.sender] =
-            (amountInScaled - amountInScaledBefore) /
-            PRECISION;
-
+        accumulatedFeePerLiquidityUnit += (feeAmount * PRECISION) / liquidity;
         reserve0 += roundUpToNearestWhole(amountInScaledBefore) / PRECISION;
         reserve1 -= amountOut;
 
@@ -150,9 +154,16 @@ contract JoesSwapV2 is ReentrancyGuard {
     }
 
     function withdrawFees() public nonReentrant {
-        uint256 feeAmount = feePool0[msg.sender];
-        if(feeAmount <= 0) revert("No fees to withdraw");
-        token0.transfer(msg.sender, feeAmount);
+        uint256 liquidityToRemove = lpBalances[msg.sender];
+
+        uint256 feeShareScaled = ((accumulatedFeePerLiquidityUnit -
+            userEntryFeePerLiquidityUnit[msg.sender]) * liquidityToRemove) /
+            PRECISION;
+        uint256 feeShare = feeShareScaled / PRECISION;
+        if (feeShare <= 0) {
+            revert InsufficentFeesBalance();
+        }
+        token0.transfer(msg.sender, feeShare);
     }
 
     function getAmountOut(uint256 amountIn) internal view returns (uint256) {
