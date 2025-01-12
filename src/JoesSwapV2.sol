@@ -26,13 +26,17 @@ contract JoesSwapV2 is ReentrancyGuard {
     event RemoveLiquidity(address sender, uint256 liquidityToRemove);
     event Swap(address sender, uint256 amount0, uint256 amount1);
     event Swap2(address sender, uint256 amount0, uint256 amount1);
+    event WithdrawFees(address sender, uint256 feeAmount);
 
     constructor(address _token0, address _token1) {
         token0 = IERC20(_token0);
         token1 = IERC20(_token1);
     }
 
-    function addLiquidity(uint256 amount0, uint256 amount1) public  nonReentrant{
+    function addLiquidity(
+        uint256 amount0,
+        uint256 amount1
+    ) public nonReentrant {
         reserve0 += amount0;
         reserve1 += amount1;
 
@@ -55,10 +59,8 @@ contract JoesSwapV2 is ReentrancyGuard {
         uint256 amount0 = (reserve0 * liquidityToRemove) / liquidity;
         uint256 amount1 = (reserve1 * liquidityToRemove) / liquidity;
 
-
         reserve0 -= amount0;
         reserve1 -= amount1;
-
 
         uint256 lpShareOfFees = feePool0[msg.sender];
         feePool0[msg.sender] -= lpShareOfFees;
@@ -132,7 +134,7 @@ contract JoesSwapV2 is ReentrancyGuard {
         uint256 amountInRounded = roundUpToNearestWhole(amountInScaled);
         uint256 amountIn = amountInRounded / PRECISION;
 
-        if(amountIn > amountInMax) revert("AmountIn too high");
+        if (amountIn > amountInMax) revert("AmountIn too high");
 
         uint256 amountOutCorrect = getAmountOut(amountInRounded);
 
@@ -150,6 +152,11 @@ contract JoesSwapV2 is ReentrancyGuard {
         token1.transfer(msg.sender, amountOutSlippageFree);
 
         emit Swap2(msg.sender, amountIn, amountOutSlippageFree);
+    }
+
+    function withdrawFees() public nonReentrant {
+        uint256 feeAmount = feePool0[msg.sender];
+        token0.transfer(msg.sender, feeAmount);
     }
 
     function getAmountOut(uint256 amountIn) internal view returns (uint256) {
