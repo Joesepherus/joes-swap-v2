@@ -5,7 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
-contract JoesSwapV2 is ReentrancyGuard{
+contract JoesSwapV2 is ReentrancyGuard {
     IERC20 public token0;
     IERC20 public token1;
 
@@ -15,6 +15,12 @@ contract JoesSwapV2 is ReentrancyGuard{
     uint256 public liquidity;
 
     uint256 immutable PRECISION = 1e18;
+
+    uint256 immutable FEE = 3;
+
+    mapping(address => uint256) public lpBalances;
+    mapping(address => uint256) public feePool0;
+    mapping(address => uint256) public feePool1;
 
     event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
     event RemoveLiquidity(address sender, uint256 liquidityToRemove);
@@ -26,7 +32,7 @@ contract JoesSwapV2 is ReentrancyGuard{
         token1 = IERC20(_token1);
     }
 
-    function addLiquidity(uint256 amount0, uint256 amount1) public {
+    function addLiquidity(uint256 amount0, uint256 amount1) public  nonReentrant{
         reserve0 += amount0;
         reserve1 += amount1;
 
@@ -36,22 +42,34 @@ contract JoesSwapV2 is ReentrancyGuard{
         uint256 newLiquidity = sqrt(amount0Scaled * amount1Scaled);
 
         liquidity += newLiquidity;
+        lpBalances[msg.sender] += newLiquidity;
 
         token0.transferFrom(msg.sender, address(this), amount0);
         token1.transferFrom(msg.sender, address(this), amount1);
+
         emit AddLiquidity(msg.sender, amount0, amount1);
     }
 
-    function removeLiquidity(uint256 liquidityToRemove) public {
+    function removeLiquidity() public nonReentrant {
+        uint256 liquidityToRemove = lpBalances[msg.sender];
         uint256 amount0 = (reserve0 * liquidityToRemove) / liquidity;
         uint256 amount1 = (reserve1 * liquidityToRemove) / liquidity;
+
 
         reserve0 -= amount0;
         reserve1 -= amount1;
 
+
+        uint256 lpShareOfFees = feePool0[msg.sender];
+        feePool0[msg.sender] -= lpShareOfFees;
+
         liquidity -= liquidityToRemove;
         token0.transfer(msg.sender, amount0);
         token1.transfer(msg.sender, amount1);
+
+        if (lpShareOfFees > 0) {
+            token0.transfer(msg.sender, lpShareOfFees);
+        }
 
         emit RemoveLiquidity(msg.sender, liquidityToRemove);
     }
@@ -66,13 +84,6 @@ contract JoesSwapV2 is ReentrancyGuard{
         return value;
     }
 
-    //    function roundUpToNearestWhole(
-    //        uint256 value
-    //    ) public pure returns (uint256) {
-    //        // Add half of 1e18 for rounding, then divide and multiply to get the rounded value
-    //        return ((value + 5e17) / 1e18) * 1e18;
-    //    }
-
     function roundDownToNearestWhole(
         uint256 value
     ) internal pure returns (uint256) {
@@ -85,12 +96,21 @@ contract JoesSwapV2 is ReentrancyGuard{
 
         uint256 amountOutScaled = getAmountOut(scaledAmountIn);
         if (amountOutScaled < 1e18) revert("Amount out too small");
-        uint256 amountOutRounded = roundUpToNearestWhole(amountOutScaled);
+        uint256 amountOutRounded = roundDownToNearestWhole(amountOutScaled);
         uint256 amountOut = amountOutRounded / PRECISION;
 
         uint256 amountInCorrect = getAmountIn(amountOutRounded);
-        uint256 amountInRouded = roundUpToNearestWhole(amountInCorrect);
+
+        uint256 feeAmount = (amountInCorrect * FEE) / 100;
+        uint256 amountInAfterFee = amountInCorrect + feeAmount;
+
+        uint256 amountInRouded = roundUpToNearestWhole(amountInAfterFee);
         uint256 amountInSlippageFree = amountInRouded / PRECISION;
+
+        feePool0[msg.sender] =
+            roundUpToNearestWhole(scaledAmountIn - amountInCorrect) /
+            PRECISION;
+
         reserve0 += scaledAmountIn / PRECISION;
         reserve1 -= amountOut;
 
@@ -103,25 +123,31 @@ contract JoesSwapV2 is ReentrancyGuard{
 
     function swap2(uint256 amountOut, uint256 amountInMax) public nonReentrant {
         uint256 scaledAmountOut = amountOut * PRECISION;
-        uint256 amountInScaled = getAmountIn(scaledAmountOut);
-        console.log("amountInScaled", amountInScaled);
+
+        uint256 amountInScaledBefore = getAmountIn(scaledAmountOut);
+        uint256 feeAmount = (scaledAmountOut * FEE) / 100;
+        uint256 amountOutAfterFee = scaledAmountOut + feeAmount;
+
+        uint256 amountInScaled = getAmountIn(amountOutAfterFee);
         uint256 amountInRounded = roundUpToNearestWhole(amountInScaled);
-        console.log("amountInRounded", amountInRounded);
         uint256 amountIn = amountInRounded / PRECISION;
-        if (amountIn > amountInMax) {
-            revert("AmountIn is bigger than amountInMax");
-        }
+
+        if(amountIn > amountInMax) revert("AmountIn too high");
 
         uint256 amountOutCorrect = getAmountOut(amountInRounded);
-        uint256 amountOutRounded = roundDownToNearestWhole(amountOutCorrect);
+
+        uint256 amountOutRounded = roundDownToNearestWhole(amountOutAfterFee);
         uint256 amountOutSlippageFree = amountOutRounded / PRECISION;
 
-        console.log("pool token0 balance", token0.balanceOf(address(this)));
-        console.log("pool token1 balance", token1.balanceOf(address(this)));
-        console.log("msg sender token0 balance", token0.balanceOf(msg.sender));
-        console.log("msg sender token1 balance", token1.balanceOf(msg.sender));
-        token1.transferFrom(msg.sender, address(this), amountOutSlippageFree);
-        token0.transfer(msg.sender, amountIn);
+        feePool0[msg.sender] =
+            (amountInScaled - amountInScaledBefore) /
+            PRECISION;
+
+        reserve0 += roundUpToNearestWhole(amountInScaledBefore) / PRECISION;
+        reserve1 -= amountOut;
+
+        token0.transferFrom(msg.sender, address(this), amountIn);
+        token1.transfer(msg.sender, amountOutSlippageFree);
 
         emit Swap2(msg.sender, amountIn, amountOutSlippageFree);
     }
@@ -149,23 +175,5 @@ contract JoesSwapV2 is ReentrancyGuard{
             y = z;
             z = (x / z + z) / 2;
         }
-    }
-
-    uint256 constant Q96 = 2 ** 96;
-
-    function computeSqrtPriceX96(
-        uint256 reserve0,
-        uint256 reserve1
-    ) public pure returns (uint256) {
-        require(
-            reserve0 > 0 && reserve1 > 0,
-            "Reserves must be greater than zero"
-        );
-
-        uint256 ratio = (reserve1 * 1e18) / reserve0; // Scale up for precision
-        uint256 sqrtRatio = sqrt(ratio); // Take the square root
-        uint256 sqrtPriceX96 = (sqrtRatio * Q96) / 1e9; // Adjust the scale to Q96
-
-        return sqrtPriceX96;
     }
 }

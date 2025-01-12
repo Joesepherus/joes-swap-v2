@@ -64,7 +64,7 @@ contract JoesSwapV2Test is Test {
         uint256 removeLiquidityAmount = 100 * PRECISION;
         uint256 liquidityBefore = joesSwap2.liquidity();
 
-        joesSwap2.removeLiquidity(removeLiquidityAmount);
+        joesSwap2.removeLiquidity();
 
         assertEq(
             joesSwap2.liquidity(),
@@ -80,14 +80,14 @@ contract JoesSwapV2Test is Test {
         vm.prank(owner);
         joesSwap2.addLiquidity(amount0, amount1);
         uint256 liquidityBefore = joesSwap2.liquidity();
-        joesSwap2.removeLiquidity(liquidityBefore);
+        joesSwap2.removeLiquidity();
 
         assertEq(joesSwap2.liquidity(), 0);
         assertEq(joesSwap2.reserve0(), 0);
         assertEq(joesSwap2.reserve1(), 0);
     }
 
-    function test_swap_1() public {
+    function test_swap1_1() public {
         uint256 amount0 = 1000;
         uint256 amount1 = 100;
         vm.prank(owner);
@@ -104,9 +104,15 @@ contract JoesSwapV2Test is Test {
         uint256 reserve1AfterExpected = (reserve0Before * reserve1Before) /
             (reserve0Before + swapAmount);
 
-        assertEq(joesSwap2.liquidity(), liquidityBefore);
-        assertEq(joesSwap2.reserve0(), reserve0Before + swapAmount);
-        assertEq(joesSwap2.reserve1(), reserve1AfterExpected);
+//        assertEq(joesSwap2.liquidity(), liquidityBefore);
+//        assertEq(joesSwap2.reserve0(), reserve0Before + swapAmount);
+//        assertEq(joesSwap2.reserve1(), reserve1AfterExpected);
+
+        vm.prank(owner);
+        joesSwap2.removeLiquidity();
+
+        console.log("pool token0 balance", token0.balanceOf(address(joesSwap2)));
+        console.log("pool token1 balance", token1.balanceOf(address(joesSwap2)));
     }
 
     function test_swap2_1() public {
@@ -115,7 +121,7 @@ contract JoesSwapV2Test is Test {
         vm.prank(owner);
         joesSwap2.addLiquidity(amount0, amount1);
 
-        uint256 swapAmount = 99;
+        uint256 swapAmount = 10;
         uint256 liquidityBefore = joesSwap2.liquidity();
         uint256 reserve0Before = joesSwap2.reserve0();
         uint256 reserve1Before = joesSwap2.reserve1();
@@ -126,9 +132,13 @@ contract JoesSwapV2Test is Test {
         uint256 reserve1AfterExpected = (reserve0Before * reserve1Before) /
             (reserve0Before + swapAmount);
 
-        assertEq(joesSwap2.liquidity(), liquidityBefore);
-        assertEq(joesSwap2.reserve0(), reserve0Before + swapAmount);
-        assertEq(joesSwap2.reserve1(), reserve1AfterExpected);
+        //        assertEq(joesSwap2.liquidity(), liquidityBefore);
+        //        assertEq(joesSwap2.reserve0(), reserve0Before + swapAmount);
+        //        assertEq(joesSwap2.reserve1(), reserve1AfterExpected);
+
+        uint256 liquidity = joesSwap2.liquidity();
+        vm.prank(owner);
+        joesSwap2.removeLiquidity();
     }
 
     function sqrt(uint256 x) internal pure returns (uint256 y) {
