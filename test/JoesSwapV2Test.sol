@@ -141,6 +141,41 @@ contract JoesSwapV2Test is Test {
         joesSwap2.removeLiquidity();
     }
 
+
+    function test_swap2_2() public {
+        uint256 amount0 = 1000;
+        uint256 amount1 = 100;
+        vm.prank(owner);
+        joesSwap2.addLiquidity(amount0, amount1);
+
+        uint256 swapAmount = 10;
+        uint256 liquidityBefore = joesSwap2.liquidity();
+        uint256 reserve0Before = joesSwap2.reserve0();
+        uint256 reserve1Before = joesSwap2.reserve1();
+
+        vm.prank(owner);
+        joesSwap2.swap2(swapAmount, 123);
+
+        uint256 reserve1AfterExpected = (reserve0Before * reserve1Before) /
+            (reserve0Before + swapAmount);
+
+        //        assertEq(joesSwap2.liquidity(), liquidityBefore);
+        //        assertEq(joesSwap2.reserve0(), reserve0Before + swapAmount);
+        //        assertEq(joesSwap2.reserve1(), reserve1AfterExpected);
+
+        uint256 liquidity = joesSwap2.liquidity();
+        vm.prank(owner);
+        joesSwap2.removeLiquidity();
+        vm.prank(owner);
+        joesSwap2.withdrawFees();
+    }
+
+    function test_withdrawFeesBeforeSwap() public {
+        vm.prank(owner);
+        joesSwap2.withdrawFees();
+    }
+
+
     function sqrt(uint256 x) internal pure returns (uint256 y) {
         y = x;
         uint256 z = (x + 1) / 2;
