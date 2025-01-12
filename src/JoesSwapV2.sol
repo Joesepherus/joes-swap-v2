@@ -171,6 +171,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
             revert InsufficentFeesBalance();
         }
         token0.transfer(msg.sender, feeShare);
+        userEntryFeePerLiquidityUnit = accumulatedFeePerLiquidityUnit;
+        emit WithdrawFees(msg.sender, feeShare);
     }
 
     function getAmountOut(uint256 amountIn) internal view returns (uint256) {
