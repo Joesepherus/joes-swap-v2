@@ -26,7 +26,12 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
     event PoolInitialized(address sender, uint256 amount0, uint256 amount1);
     event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
-    event RemoveLiquidity(address sender, uint256 liquidityToRemove);
+    event RemoveLiquidity(
+        address sender,
+        uint256 liquidityToRemove,
+        uint256 amount0,
+        uint256 amount1
+    );
     event Swap(address sender, uint256 amount0, uint256 amount1);
     event Swap2(address sender, uint256 amount0, uint256 amount1);
     event WithdrawFees(address sender, uint256 feeAmount);
@@ -101,11 +106,11 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         liquidity -= liquidityToRemove;
         lpBalances[msg.sender] -= liquidityToRemove;
 
-        emit RemoveLiquidity(msg.sender, liquidityToRemove);
+        emit RemoveLiquidity(msg.sender, liquidityToRemove, amount0, amount1);
     }
 
-    function swap(uint256 amountIn) public nonReentrant {
-        uint256 scaledAmountIn = amountIn * PRECISION;
+    function swapToken0Amount(uint256 amount0) public nonReentrant {
+        uint256 scaledAmountIn = amount0 * PRECISION;
 
         uint256 amountOutScaled = getAmountOut(scaledAmountIn);
         if (amountOutScaled < 1e18) revert("Amount out too small");
@@ -132,8 +137,11 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         emit Swap(msg.sender, amountInSlippageFree, amountOut);
     }
 
-    function swap2(uint256 amountOut, uint256 amountInMax) public nonReentrant {
-        uint256 scaledAmountOut = amountOut * PRECISION;
+    function swapToken1Amount(
+        uint256 amount1,
+        uint256 amountInMax
+    ) public nonReentrant {
+        uint256 scaledAmountOut = amount1 * PRECISION;
 
         uint256 amountInScaledBefore = getAmountIn(scaledAmountOut);
         uint256 feeAmount = (scaledAmountOut * FEE) / 100;
@@ -155,7 +163,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         accumulatedFeePerLiquidityUnit += (feeAmount * PRECISION) / liquidity;
         reserve0 += roundUpToNearestWhole(amountInScaledBefore) / PRECISION;
-        reserve1 -= amountOut;
+        reserve1 -= amount1;
 
         emit Swap2(msg.sender, amountIn, amountOutSlippageFree);
     }

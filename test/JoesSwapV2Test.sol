@@ -117,14 +117,14 @@ contract JoesSwapV2Test is Test {
         assertEq(joesSwapV2.reserve1(), 0);
     }
 
-    function test_swap1_1() public {
+    function test_swapToken0Amount() public {
         uint256 swapAmount = 100;
         uint256 liquidityBefore = joesSwapV2.liquidity();
         uint256 reserve0Before = joesSwapV2.reserve0();
         uint256 reserve1Before = joesSwapV2.reserve1();
 
         vm.prank(owner);
-        joesSwapV2.swap(swapAmount);
+        joesSwapV2.swapToken0Amount(swapAmount);
 
         uint256 reserve1AfterExpected = (reserve0Before * reserve1Before) /
             (reserve0Before + swapAmount);
@@ -146,14 +146,14 @@ contract JoesSwapV2Test is Test {
         );
     }
 
-    function test_swap2_1() public {
+    function test_swapToken1Amount_1() public {
         uint256 swapAmount = 10;
         uint256 liquidityBefore = joesSwapV2.liquidity();
         uint256 reserve0Before = joesSwapV2.reserve0();
         uint256 reserve1Before = joesSwapV2.reserve1();
 
         vm.prank(owner);
-        joesSwapV2.swap2(swapAmount, 123);
+        joesSwapV2.swapToken1Amount(swapAmount, 123);
 
         uint256 reserve1AfterExpected = (reserve0Before * reserve1Before) /
             (reserve0Before + swapAmount);
@@ -167,14 +167,14 @@ contract JoesSwapV2Test is Test {
         joesSwapV2.removeLiquidity();
     }
 
-    function test_swap2_2() public {
+    function test_swapToken1Amount_2() public {
         uint256 swapAmount = 10;
         uint256 liquidityBefore = joesSwapV2.liquidity();
         uint256 reserve0Before = joesSwapV2.reserve0();
         uint256 reserve1Before = joesSwapV2.reserve1();
 
         vm.prank(owner);
-        joesSwapV2.swap2(swapAmount, 123);
+        joesSwapV2.swapToken1Amount(swapAmount, 123);
 
         uint256 reserve1AfterExpected = (reserve0Before * reserve1Before) /
             (reserve0Before + swapAmount);
@@ -190,21 +190,21 @@ contract JoesSwapV2Test is Test {
         //        joesSwapV2.removeLiquidity();
     }
 
-    function test_swap2_3() public {
+    function test_swapToken1Amount_3() public {
         uint256 swapAmount = 100;
         uint256 amount0 = 10000;
 
         vm.prank(owner);
-        joesSwapV2.swap2(swapAmount, 10000);
+        joesSwapV2.swapToken1Amount(swapAmount, 10000);
 
         vm.prank(owner2);
         joesSwapV2.addLiquidity(amount0);
 
         vm.prank(owner);
-        joesSwapV2.swap2(swapAmount, 10000);
+        joesSwapV2.swapToken1Amount(swapAmount, 10000);
 
         vm.prank(owner);
-        joesSwapV2.swap2(swapAmount, 10000);
+        joesSwapV2.swapToken1Amount(swapAmount, 10000);
 
         vm.prank(owner);
         joesSwapV2.withdrawFees();
@@ -214,7 +214,7 @@ contract JoesSwapV2Test is Test {
         joesSwapV2.removeLiquidity();
 
         vm.prank(owner);
-        joesSwapV2.swap2(swapAmount, 10000);
+        joesSwapV2.swapToken1Amount(swapAmount, 10000);
 
         vm.prank(owner2);
         joesSwapV2.withdrawFees();
