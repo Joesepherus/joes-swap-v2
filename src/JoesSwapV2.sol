@@ -30,7 +30,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
     event RemoveLiquidity(address sender, uint256 liquidityToRemove, uint256 amount0, uint256 amount1);
     event Swap(address sender, uint256 amount0, uint256 amount1);
-    event Swap2(address sender, uint256 amount0, uint256 amount1);
     event WithdrawFees(address sender, uint256 feeAmount);
 
     error InsufficentFeesBalance();
@@ -162,7 +161,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         reserve0 += roundUpToNearestWhole(amountInScaledBefore) / PRECISION;
         reserve1 -= amountOut;
 
-        emit Swap2(msg.sender, amountIn, amountOutSlippageFree);
+        emit Swap(msg.sender, amountIn, amountOutSlippageFree);
     }
 
     function withdrawFees() public nonReentrant {
