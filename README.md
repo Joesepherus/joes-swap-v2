@@ -6,7 +6,7 @@ Upgraded version of Joes Swap v1.
 2. Swap the other way around
 3. Fix the slippage - good samaritan
 4. Add possibility to set maxAmount of token1 for amount of token0 and vice versa
-5. Hand out LP tokens to liquidity providers
+5. Hand out LP tokens to liquidity providers - as fees
 
 This is a very basic implementation of a Decentralized Exchange using Solidity and Foundry.
 
