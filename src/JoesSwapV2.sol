@@ -56,23 +56,17 @@ contract JoesSwapV2 is ReentrancyGuard {
 
     function removeLiquidity() public nonReentrant {
         uint256 liquidityToRemove = lpBalances[msg.sender];
+        if(liquidityToRemove <= 0) revert("No liquidity to remove");
         uint256 amount0 = (reserve0 * liquidityToRemove) / liquidity;
         uint256 amount1 = (reserve1 * liquidityToRemove) / liquidity;
 
-        uint256 lpShareOfFees = feePool0[msg.sender];
-
         token0.transfer(msg.sender, amount0);
         token1.transfer(msg.sender, amount1);
-
-        if (lpShareOfFees > 0) {
-            token0.transfer(msg.sender, lpShareOfFees);
-        }
 
         reserve0 -= amount0;
         reserve1 -= amount1;
 
         liquidity -= liquidityToRemove;
-        feePool0[msg.sender] -= lpShareOfFees;
 
         emit RemoveLiquidity(msg.sender, liquidityToRemove);
     }
@@ -157,6 +151,7 @@ contract JoesSwapV2 is ReentrancyGuard {
 
     function withdrawFees() public nonReentrant {
         uint256 feeAmount = feePool0[msg.sender];
+        if(feeAmount <= 0) revert("No fees to withdraw");
         token0.transfer(msg.sender, feeAmount);
     }
 
