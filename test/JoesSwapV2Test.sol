@@ -14,6 +14,7 @@ contract JoesSwapV2Test is Test {
     uint256 immutable PRECISION = 1e18;
 
     address owner = address(0x4eFF9F6DBb11A3D9a18E92E35BD4D54ac4E1533a);
+    address owner2 = address(2);
 
     function setUp() public {
         token0 = new ERC20Mock("Token0", "T0");
@@ -23,14 +24,24 @@ contract JoesSwapV2Test is Test {
         uint256 STARTING_AMOUNT = 1_000_000;
 
         vm.deal(owner, STARTING_AMOUNT);
+        vm.deal(owner2, STARTING_AMOUNT);
 
         token0.mint(owner, STARTING_AMOUNT);
         token1.mint(owner, STARTING_AMOUNT);
+
+        token0.mint(owner2, STARTING_AMOUNT);
+        token1.mint(owner2, STARTING_AMOUNT);
 
         vm.startPrank(owner);
         token0.approve(address(joesSwap2), STARTING_AMOUNT);
         token1.approve(address(joesSwap2), STARTING_AMOUNT);
         vm.stopPrank();
+
+        vm.startPrank(owner2);
+        token0.approve(address(joesSwap2), STARTING_AMOUNT);
+        token1.approve(address(joesSwap2), STARTING_AMOUNT);
+        vm.stopPrank();
+
         uint256 token0Balance = token0.balanceOf(address(joesSwap2));
         uint256 token1Balance = token1.balanceOf(address(joesSwap2));
         console.log("token0Balance", token0Balance);
@@ -165,7 +176,51 @@ contract JoesSwapV2Test is Test {
 
         uint256 liquidity = joesSwap2.liquidity();
         vm.prank(owner);
+        joesSwap2.withdrawFees();
+//        vm.prank(owner);
+//        joesSwap2.removeLiquidity();
+    }
+
+    function test_swap2_3() public {
+        uint256 amount0 = 10000;
+        uint256 amount1 = 1000;
+        vm.prank(owner);
+        joesSwap2.addLiquidity(amount0, amount1);
+
+        uint256 swapAmount = 100;
+        uint256 liquidityBefore = joesSwap2.liquidity();
+        uint256 reserve0Before = joesSwap2.reserve0();
+        uint256 reserve1Before = joesSwap2.reserve1();
+
+        vm.prank(owner);
+        joesSwap2.swap2(swapAmount, 10000);
+
+         vm.prank(owner2);
+        joesSwap2.addLiquidity(amount0, amount1);
+
+
+        vm.prank(owner);
+        joesSwap2.swap2(swapAmount, 10000);
+
+
+        vm.prank(owner);
+        joesSwap2.swap2(swapAmount, 10000);
+
+        vm.prank(owner);
+        joesSwap2.withdrawFees();
+        vm.prank(owner2);
+        joesSwap2.withdrawFees();
+        vm.prank(owner);
         joesSwap2.removeLiquidity();
+
+
+        vm.prank(owner);
+        joesSwap2.swap2(swapAmount, 10000);
+
+        vm.prank(owner2);
+        joesSwap2.withdrawFees();
+
+
         vm.prank(owner);
         joesSwap2.withdrawFees();
     }
