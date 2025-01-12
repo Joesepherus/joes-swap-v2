@@ -37,19 +37,19 @@ contract JoesSwapV2 is ReentrancyGuard {
         uint256 amount0,
         uint256 amount1
     ) public nonReentrant {
-        reserve0 += amount0;
-        reserve1 += amount1;
-
         uint256 amount0Scaled = amount0 * PRECISION;
         uint256 amount1Scaled = amount1 * PRECISION;
 
         uint256 newLiquidity = sqrt(amount0Scaled * amount1Scaled);
 
-        liquidity += newLiquidity;
-        lpBalances[msg.sender] += newLiquidity;
-
         token0.transferFrom(msg.sender, address(this), amount0);
         token1.transferFrom(msg.sender, address(this), amount1);
+
+        reserve0 += amount0;
+        reserve1 += amount1;
+
+        liquidity += newLiquidity;
+        lpBalances[msg.sender] += newLiquidity;
 
         emit AddLiquidity(msg.sender, amount0, amount1);
     }
@@ -59,19 +59,20 @@ contract JoesSwapV2 is ReentrancyGuard {
         uint256 amount0 = (reserve0 * liquidityToRemove) / liquidity;
         uint256 amount1 = (reserve1 * liquidityToRemove) / liquidity;
 
-        reserve0 -= amount0;
-        reserve1 -= amount1;
-
         uint256 lpShareOfFees = feePool0[msg.sender];
-        feePool0[msg.sender] -= lpShareOfFees;
 
-        liquidity -= liquidityToRemove;
         token0.transfer(msg.sender, amount0);
         token1.transfer(msg.sender, amount1);
 
         if (lpShareOfFees > 0) {
             token0.transfer(msg.sender, lpShareOfFees);
         }
+
+        reserve0 -= amount0;
+        reserve1 -= amount1;
+
+        liquidity -= liquidityToRemove;
+        feePool0[msg.sender] -= lpShareOfFees;
 
         emit RemoveLiquidity(msg.sender, liquidityToRemove);
     }
@@ -109,17 +110,17 @@ contract JoesSwapV2 is ReentrancyGuard {
         uint256 amountInRouded = roundUpToNearestWhole(amountInAfterFee);
         uint256 amountInSlippageFree = amountInRouded / PRECISION;
 
+        if (amountOut <= 0) revert("Invalid output amount");
+
+        token0.transferFrom(msg.sender, address(this), amountInSlippageFree);
+        token1.transfer(msg.sender, amountOut);
+
         feePool0[msg.sender] =
             roundUpToNearestWhole(scaledAmountIn - amountInCorrect) /
             PRECISION;
 
         reserve0 += scaledAmountIn / PRECISION;
         reserve1 -= amountOut;
-
-        if (amountOut <= 0) revert("Invalid output amount");
-
-        token0.transferFrom(msg.sender, address(this), amountInSlippageFree);
-        token1.transfer(msg.sender, amountOut);
         emit Swap(msg.sender, amountInSlippageFree, amountOut);
     }
 
@@ -141,15 +142,15 @@ contract JoesSwapV2 is ReentrancyGuard {
         uint256 amountOutRounded = roundDownToNearestWhole(amountOutAfterFee);
         uint256 amountOutSlippageFree = amountOutRounded / PRECISION;
 
+        token0.transferFrom(msg.sender, address(this), amountIn);
+        token1.transfer(msg.sender, amountOutSlippageFree);
+
         feePool0[msg.sender] =
             (amountInScaled - amountInScaledBefore) /
             PRECISION;
 
         reserve0 += roundUpToNearestWhole(amountInScaledBefore) / PRECISION;
         reserve1 -= amountOut;
-
-        token0.transferFrom(msg.sender, address(this), amountIn);
-        token1.transfer(msg.sender, amountOutSlippageFree);
 
         emit Swap2(msg.sender, amountIn, amountOutSlippageFree);
     }
