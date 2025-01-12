@@ -4,8 +4,9 @@ pragma solidity ^0.8.20;
 import {Test, console} from "forge-std/Test.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
-contract JoesSwapV2 is ReentrancyGuard {
+contract JoesSwapV2 is ReentrancyGuard, Ownable {
     IERC20 public token0;
     IERC20 public token1;
 
@@ -23,6 +24,7 @@ contract JoesSwapV2 is ReentrancyGuard {
     mapping(address => uint256) public lpBalances;
     mapping(address => uint256) public userEntryFeePerLiquidityUnit;
 
+    event PoolInitialized(address sender, uint256 amount0, uint256 amount1);
     event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
     event RemoveLiquidity(address sender, uint256 liquidityToRemove);
     event Swap(address sender, uint256 amount0, uint256 amount1);
@@ -31,17 +33,38 @@ contract JoesSwapV2 is ReentrancyGuard {
     error InsufficentFeesBalance();
     error InsufficentLiquidity();
 
-    constructor(address _token0, address _token1) {
+    constructor(address _token0, address _token1) Ownable(msg.sender) {
         token0 = IERC20(_token0);
         token1 = IERC20(_token1);
     }
 
-    function addLiquidity(
+    function initializePoolLiquidity(
         uint256 amount0,
         uint256 amount1
-    ) public nonReentrant {
+    ) public onlyOwner {
         uint256 amount0Scaled = amount0 * PRECISION;
         uint256 amount1Scaled = amount1 * PRECISION;
+        uint256 newLiquidity = sqrt(amount0Scaled * amount1Scaled);
+
+        token0.transferFrom(msg.sender, address(this), amount0);
+        token1.transferFrom(msg.sender, address(this), amount1);
+
+        reserve0 += amount0;
+        reserve1 += amount1;
+
+        uint256 currentFeePerUnit = accumulatedFeePerLiquidityUnit;
+        userEntryFeePerLiquidityUnit[msg.sender] = currentFeePerUnit;
+        liquidity += newLiquidity;
+        lpBalances[msg.sender] += newLiquidity;
+
+        emit PoolInitialized(msg.sender, amount0, amount1);
+    }
+
+    function addLiquidity(uint256 amount0) public nonReentrant {
+        uint256 amount0Scaled = amount0 * PRECISION;
+
+        uint256 amount1Scaled = getAmountOut(amount0Scaled);
+        uint256 amount1 = amount1Scaled / PRECISION;
 
         uint256 newLiquidity = sqrt(amount0Scaled * amount1Scaled);
 
@@ -61,7 +84,7 @@ contract JoesSwapV2 is ReentrancyGuard {
 
     function removeLiquidity() public nonReentrant {
         uint256 liquidityToRemove = lpBalances[msg.sender];
-        if(liquidityToRemove <= 0) {
+        if (liquidityToRemove <= 0) {
             revert InsufficentLiquidity();
         }
         uint256 amount0 = (reserve0 * liquidityToRemove) / liquidity;
