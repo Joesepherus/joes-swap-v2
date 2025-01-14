@@ -298,6 +298,12 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         return value;
     }
 
+    /**
+     * @author: Joesepherus
+     * @notice Helper function for rounding up numbers
+     * @dev The function rounds down the provided number and returns it
+     * @param value The amount of token0 
+    */
     function roundDownToNearestWhole(
         uint256 value
     ) internal pure returns (uint256) {
