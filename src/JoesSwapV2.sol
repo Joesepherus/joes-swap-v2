@@ -311,6 +311,12 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         return (value / 1e18) * 1e18;
     }
 
+    /**
+     * @author: Joesepherus
+     * @notice Helper function for calculating the square root of a number
+     * @dev The function rounds up the provided number and returns it
+     * @param x The number to calculate the square root for
+    */
     function sqrt(uint256 x) internal pure returns (uint256 y) {
         y = x;
         uint256 z = (x + 1) / 2;
