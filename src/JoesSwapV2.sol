@@ -141,6 +141,22 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         emit RemoveLiquidity(msg.sender, liquidityToRemove, amount0, amount1);
     }
 
+    /**
+     * @author: Joesepherus
+     * @notice Swaps amount of token0 for an amount of token1
+     * @dev The function calculates the proper amount of token1 and swaps it with
+     *      the caller for his provided amount of token0.
+     *      It calls getAmountOut to get the correct amount of token1 in proportion to token0.
+     *      Rounds this result down and calculates the correct amout of token0 to be traded for the amount.
+     *      This way the swap is fair and there is minimal slippage.
+     *      Calculates the fee amount and updates the fee pool.
+     *      Transfers amount token0 to the pool and transfers amount token1 to the caller.
+     *      Updates reserves of the pool.
+     *      Emits a `Swap` event upon successful execution.
+     * @param amountIn The amount of token0 to add to the pool.
+     * @custom:modifier nonReentrant Function cannot be re-entered
+     * @revert "Invalid output amount" if the calculated amount of token1 is less than 0
+     */
     function swapToken0Amount(uint256 amountIn) public nonReentrant {
         uint256 scaledAmountIn = amountIn * PRECISION;
 
