@@ -228,8 +228,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         emit Swap(msg.sender, amountIn, amountOutSlippageFree);
     }
-    /**
 
+    /**
      * @author: Joesepherus
      * @notice Withdraws collected fees of the caller
      * @dev The function calculates the callers share of the fee pool and 
@@ -254,6 +254,12 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         emit WithdrawFees(msg.sender, feeShare);
     }
 
+    /**
+     * @author: Joesepherus
+     * @notice Gets amount of token1 compared to amount token0
+     * @param amountIn The amount of token0
+     * @dev The function calculates and returns the token1 compared to token0 amount 
+     */
     function getAmountOut(uint256 amountIn) internal view returns (uint256) {
         uint k = reserve0 * PRECISION * reserve1 * PRECISION;
         uint256 newReserve0 = reserve0 * PRECISION + amountIn;
