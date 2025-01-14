@@ -197,7 +197,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      *      Transfers amount token1 to the pool and transfers amount token0 to the caller.
      *      Updates reserves of the pool.
      *      Emits a `Swap` event upon successful execution.
-     * @param amountIn The amount of token0 to add to the pool.
+     * @param amountOut The amount of token0 to add to the pool.
      * @custom:modifier nonReentrant Function cannot be re-entered
      * @revert "Invalid output amount" if the calculated amount of token1 is less than 0
      */
