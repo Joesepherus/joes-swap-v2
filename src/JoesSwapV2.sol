@@ -6,32 +6,45 @@ import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
+/** 
+ * @author Joesepherus   
+ * @title JoesSwapV2
+ * @dev Decentralized token swapping contract with liquidity provision and fee management.
+ */
 contract JoesSwapV2 is ReentrancyGuard, Ownable {
+    /*//////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
     IERC20 public token0;
     IERC20 public token1;
-
     uint256 public reserve0;
     uint256 public reserve1;
-
     uint256 public liquidity;
-
-    uint256 immutable PRECISION = 1e18;
-
-    uint256 immutable FEE = 3;
-
     uint256 public accumulatedFeePerLiquidityUnit;
-
     bool public poolInitialized = false;
 
     mapping(address => uint256) public lpBalances;
     mapping(address => uint256) public userEntryFeePerLiquidityUnit;
 
+    /*//////////////////////////////////////////////////////////////
+                                CONSTANTS 
+    //////////////////////////////////////////////////////////////*/
+    uint256 immutable PRECISION = 1e18;
+
+    uint256 immutable FEE = 3;
+
+    /*//////////////////////////////////////////////////////////////
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
     event PoolInitialized(address sender, uint256 amount0, uint256 amount1);
     event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
     event RemoveLiquidity(address sender, uint256 liquidityToRemove, uint256 amount0, uint256 amount1);
     event Swap(address sender, uint256 amount0, uint256 amount1);
     event WithdrawFees(address sender, uint256 feeAmount);
 
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
     error InsufficentFeesBalance();
     error InsufficentLiquidity();
     error PoolAlreadyInitialized();
@@ -41,8 +54,11 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         token1 = IERC20(_token1);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                               FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /**
-     * @author: Joesepherus
      * @notice Initializes the pool with the provided liquidity amounts of token0 and token1.
      * @dev This function can only be called once and by the owner. 
      *      It transfers the specified amounts of token0 and token1 from the caller to the contract,
@@ -78,7 +94,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Adds liquidity to the pool with the provided amount of token0 and token1 is then calculated.
      * @dev The function scales up the amount of token0 by PRECISION.
      *      It calls getAmountOut to get the correct amount of token1 in proportion to token0.
@@ -111,7 +126,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Removes all liquidity the caller has in the pool.
      * @dev The functions gets the correct amount of token0 and token1 to send to the user.
      *      Handles transfers from the pool to the caller.
@@ -142,7 +156,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Swaps amount of token0 for an amount of token1
      * @dev The function calculates the proper amount of token1 and swaps it with
      *      the caller for his provided amount of token0.
@@ -155,7 +168,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      *      Emits a `Swap` event upon successful execution.
      * @param amountIn The amount of token0 to add to the pool.
      * @custom:modifier nonReentrant Function cannot be re-entered
-     * @revert "Invalid output amount" if the calculated amount of token1 is less than 0
+     * @custom:revert "Invalid output amount" if the calculated amount of token1 is less than 0
      */
     function swapToken0Amount(uint256 amountIn) public nonReentrant {
         uint256 scaledAmountIn = amountIn * PRECISION;
@@ -186,7 +199,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Swaps amount of token1 for an amount of token0
      * @dev The function calculates the proper amount of token0 and swaps it with
      *      the caller for his provided amount of token1.
@@ -199,7 +211,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      *      Emits a `Swap` event upon successful execution.
      * @param amountOut The amount of token0 to add to the pool.
      * @custom:modifier nonReentrant Function cannot be re-entered
-     * @revert "Invalid output amount" if the calculated amount of token1 is less than 0
+     * @custom:revert "Invalid output amount" if the calculated amount of token1 is less than 0
      */
     function swapToken1Amount(uint256 amountOut, uint256 amountInMax) public nonReentrant {
         uint256 scaledAmountOut = amountOut * PRECISION;
@@ -230,7 +242,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Withdraws collected fees of the caller
      * @dev The function calculates the callers share of the fee pool and 
      *      transfers the fees from the pool to the caller.
@@ -255,7 +266,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Gets amount of token1 compared to amount token0
      * @param amountIn The amount of token0
      * @dev The function calculates and returns the token1 compared to token0 amount 
@@ -269,7 +279,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Gets amount of token0 compared to amount token1
      * @dev The function calculates and returns the token0 compared to token1 amount 
      * @param amountOut The amount of token1 
@@ -283,7 +292,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Helper function for rounding up numbers
      * @dev The function rounds up the provided number and returns it
      * @param value The amount of token0 
@@ -299,7 +307,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Helper function for rounding up numbers
      * @dev The function rounds down the provided number and returns it
      * @param value The amount of token0 
@@ -312,7 +319,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @author: Joesepherus
      * @notice Helper function for calculating the square root of a number
      * @dev The function rounds up the provided number and returns it
      * @param x The number to calculate the square root for
