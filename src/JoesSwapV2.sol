@@ -77,6 +77,19 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         emit PoolInitialized(msg.sender, amount0, amount1);
     }
 
+    /**
+     * @author: Joesepherus
+     * @notice Adds liquidity to the pool with the provided amount of token0 and token1 is then calculated.
+     * @dev The function scales up the amount of token0 by PRECISION.
+     *      It calls getAmountOut to get the correct amount of token1 in proportion to token0.
+     *      Calculates the liquidity, updates reserves, handles transfers from user to the pool.
+     *      Sets up liquidity balance and entry point for the caller.
+     *      Emits a `AddLiquidity` event upon successful execution.
+     * @param amount0 The amount of token0 to add to the pool.
+     * @param amount1 The amount of token1 to add to the pool.
+     * @custom:modifier onlyOwner Can only be called by the contract owner.
+     * @custom:revert PoolAlreadyInitialized if the pool has already been initialized.
+     */
     function addLiquidity(uint256 amount0) public nonReentrant {
         uint256 amount0Scaled = amount0 * PRECISION;
 
