@@ -268,6 +268,12 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         return reserve1 * PRECISION - newReserve1;
     }
 
+    /**
+     * @author: Joesepherus
+     * @notice Gets amount of token0 compared to amount token1
+     * @dev The function calculates and returns the token0 compared to token1 amount 
+     * @param amountOut The amount of token1 
+     */
     function getAmountIn(uint256 amountOut) internal view returns (uint256) {
         uint k = reserve0 * PRECISION * reserve1 * PRECISION;
         uint256 newReserve1 = reserve1 * PRECISION - amountOut;
