@@ -110,6 +110,17 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         emit AddLiquidity(msg.sender, amount0, amount1);
     }
 
+    /**
+     * @author: Joesepherus
+     * @notice Removes all liquidity the caller has in the pool.
+     * @dev The functions gets the correct amount of token0 and token1 to send to the user.
+     *      Handles transfers from the pool to the caller.
+     *      Updates reserves, liquidity of the pool.
+     *      Updates lp balance of the caller.
+     *      Emits a `RemoveLiquidity` event upon successful execution.
+     * @custom:modifier nonReentrant Function cannot be re-entered.
+     * @custom:revert InsufficentLiquidity if the caller has no liquidity in the pool.
+     */
     function removeLiquidity() public nonReentrant {
         uint256 liquidityToRemove = lpBalances[msg.sender];
         if (liquidityToRemove <= 0) {
@@ -119,7 +130,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         uint256 amount1 = (reserve1 * liquidityToRemove) / liquidity;
 
         token0.transfer(msg.sender, amount0);
-
         token1.transfer(msg.sender, amount1);
 
         reserve0 -= amount0;
