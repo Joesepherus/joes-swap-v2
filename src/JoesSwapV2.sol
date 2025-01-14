@@ -228,7 +228,17 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         emit Swap(msg.sender, amountIn, amountOutSlippageFree);
     }
+    /**
 
+     * @author: Joesepherus
+     * @notice Withdraws collected fees of the caller
+     * @dev The function calculates the callers share of the fee pool and 
+     *      transfers the fees from the pool to the caller.
+     *      Updates the liquidity entry point for the the caller so he can't double spend.
+     *      Emits a `WithdrawFees` event upon successful execution.
+     * @custom:modifier nonReentrant Function cannot be re-entered
+     * @custom:revert InsufficentFeesBalance if the calculated fee share is less than 0
+     */
     function withdrawFees() public nonReentrant {
         uint256 liquidityToRemove = lpBalances[msg.sender];
 
