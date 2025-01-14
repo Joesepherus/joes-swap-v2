@@ -87,8 +87,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      *      Emits a `AddLiquidity` event upon successful execution.
      * @param amount0 The amount of token0 to add to the pool.
      * @param amount1 The amount of token1 to add to the pool.
-     * @custom:modifier onlyOwner Can only be called by the contract owner.
-     * @custom:revert PoolAlreadyInitialized if the pool has already been initialized.
+     * @custom:modifier nonReentrant Function cannot be re-entered
      */
     function addLiquidity(uint256 amount0) public nonReentrant {
         uint256 amount0Scaled = amount0 * PRECISION;
