@@ -86,7 +86,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      *      Sets up liquidity balance and entry point for the caller.
      *      Emits a `AddLiquidity` event upon successful execution.
      * @param amount0 The amount of token0 to add to the pool.
-     * @param amount1 The amount of token1 to add to the pool.
      * @custom:modifier nonReentrant Function cannot be re-entered
      */
     function addLiquidity(uint256 amount0) public nonReentrant {
