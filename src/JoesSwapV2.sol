@@ -32,8 +32,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
                                 CONSTANTS 
     //////////////////////////////////////////////////////////////*/
     uint256 immutable PRECISION = 1e18;
-
     uint256 immutable FEE = 3;
+    uint256 immutable ONE_HUNDRED = 100;
 
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
@@ -228,7 +228,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         uint256 scaledAmountOut = amountOut * PRECISION;
 
         uint256 amountInScaledBefore = getAmountIn(scaledAmountOut);
-        uint256 feeAmount = (scaledAmountOut * FEE) / 100;
+        uint256 feeAmount = (scaledAmountOut * FEE) / ONE_HUNDRED;
         uint256 amountOutAfterFee = scaledAmountOut + feeAmount;
 
         uint256 amountInScaled = getAmountIn(amountOutAfterFee);
