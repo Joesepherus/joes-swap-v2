@@ -302,6 +302,16 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
             userEntryFeePerLiquidityUnitToken0[msg.sender]) *
             liquidityToRemove) / PRECISION;
         uint256 feeShareToken0 = feeShareScaledToken0 / PRECISION;
+
+        uint256 feeShareScaledToken1 = ((accumulatedFeePerLiquidityUnitToken1 -
+            userEntryFeePerLiquidityUnitToken1[msg.sender]) *
+            liquidityToRemove) / PRECISION;
+        uint256 feeShareToken1 = feeShareScaledToken1 / PRECISION;
+
+        if (feeShareToken0 <= 0 && feeShareToken1 <= 0) {
+            revert InsufficentFeesBalance();
+        }
+
         if (feeShareToken0 > 0) {
             userEntryFeePerLiquidityUnitToken0[
                 msg.sender
@@ -310,10 +320,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
             token0.safeTransfer(msg.sender, feeShareToken0);
         }
 
-        uint256 feeShareScaledToken1 = ((accumulatedFeePerLiquidityUnitToken1 -
-            userEntryFeePerLiquidityUnitToken1[msg.sender]) *
-            liquidityToRemove) / PRECISION;
-        uint256 feeShareToken1 = feeShareScaledToken1 / PRECISION;
         if (feeShareToken1 > 0) {
             userEntryFeePerLiquidityUnitToken1[
                 msg.sender
