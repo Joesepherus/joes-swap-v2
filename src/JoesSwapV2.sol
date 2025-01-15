@@ -22,11 +22,13 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     uint256 public reserve0;
     uint256 public reserve1;
     uint256 public liquidity;
-    uint256 public accumulatedFeePerLiquidityUnit;
+    uint256 accumulatedFeePerLiquidityUnitToken0;
+    uint256 accumulatedFeePerLiquidityUnitToken1;
     bool public poolInitialized = false;
 
     mapping(address => uint256) public lpBalances;
-    mapping(address => uint256) public userEntryFeePerLiquidityUnit;
+    mapping(address => uint256) public userEntryFeePerLiquidityUnitToken0;
+    mapping(address => uint256) public userEntryFeePerLiquidityUnitToken1;
 
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS 
@@ -38,15 +40,27 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
-    event PoolInitialized(address indexed sender, uint256 indexed amount0, uint256 indexed amount1);
-    event AddLiquidity(address indexed sender, uint256 indexed amount0, uint256 indexed amount1);
+    event PoolInitialized(
+        address indexed sender,
+        uint256 indexed amount0,
+        uint256 indexed amount1
+    );
+    event AddLiquidity(
+        address indexed sender,
+        uint256 indexed amount0,
+        uint256 indexed amount1
+    );
     event RemoveLiquidity(
         address indexed sender,
         uint256 liquidityToRemove,
         uint256 indexed amount0,
         uint256 indexed amount1
     );
-    event Swap(address indexed sender, uint256 indexed amount0, uint256 indexed amount1);
+    event Swap(
+        address indexed sender,
+        uint256 indexed amount0,
+        uint256 indexed amount1
+    );
     event WithdrawFees(address indexed sender, uint256 indexed feeAmount);
 
     /*//////////////////////////////////////////////////////////////
@@ -88,8 +102,12 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         reserve0 += amount0;
         reserve1 += amount1;
 
-        uint256 currentFeePerUnit = accumulatedFeePerLiquidityUnit;
-        userEntryFeePerLiquidityUnit[msg.sender] = currentFeePerUnit;
+        userEntryFeePerLiquidityUnitToken0[
+            msg.sender
+        ] = accumulatedFeePerLiquidityUnitToken0;
+        userEntryFeePerLiquidityUnitToken1[
+            msg.sender
+        ] = accumulatedFeePerLiquidityUnitToken1;
         liquidity += newLiquidity;
         lpBalances[msg.sender] += newLiquidity;
         poolInitialized = true;
@@ -121,8 +139,12 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         reserve0 += amount0;
         reserve1 += amount1;
 
-        uint256 currentFeePerUnit = accumulatedFeePerLiquidityUnit;
-        userEntryFeePerLiquidityUnit[msg.sender] = currentFeePerUnit;
+        userEntryFeePerLiquidityUnitToken0[
+            msg.sender
+        ] = accumulatedFeePerLiquidityUnitToken0;
+        userEntryFeePerLiquidityUnitToken1[
+            msg.sender
+        ] = accumulatedFeePerLiquidityUnitToken1;
         liquidity += newLiquidity;
         lpBalances[msg.sender] += newLiquidity;
 
@@ -195,14 +217,20 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         if (amountOut <= 0) revert("Invalid output amount");
 
-        accumulatedFeePerLiquidityUnit += (feeAmount * PRECISION) / liquidity;
+        accumulatedFeePerLiquidityUnitToken0 +=
+            (feeAmount * PRECISION) /
+            liquidity;
 
         reserve0 += scaledAmountIn / PRECISION;
         reserve1 -= amountOut;
 
         emit Swap(msg.sender, amountInSlippageFree, amountOut);
 
-        token0.safeTransferFrom(msg.sender, address(this), amountInSlippageFree);
+        token0.safeTransferFrom(
+            msg.sender,
+            address(this),
+            amountInSlippageFree
+        );
         token1.safeTransfer(msg.sender, amountOut);
     }
 
@@ -217,39 +245,45 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      *      Transfers amount token1 to the pool and transfers amount token0 to the caller.
      *      Updates reserves of the pool.
      *      Emits a `Swap` event upon successful execution.
-     * @param amountOut The amount of token0 to add to the pool.
+     * @param amountIn The amount of token0 to add to the pool.
      * @custom:modifier nonReentrant Function cannot be re-entered
      * @custom:revert "Invalid output amount" if the calculated amount of token1 is less than 0
      */
     function swapToken1Amount(
-        uint256 amountOut,
+        uint256 amountIn,
         uint256 amountInMax
     ) external nonReentrant {
-        uint256 scaledAmountOut = amountOut * PRECISION;
+        uint256 scaledAmountIn = amountIn * PRECISION;
 
-        uint256 amountInScaledBefore = getAmountIn(scaledAmountOut);
-        uint256 feeAmount = (scaledAmountOut * FEE) / ONE_HUNDRED;
-        uint256 amountOutAfterFee = scaledAmountOut + feeAmount;
+        uint256 amountOutScaled = getAmountIn(scaledAmountIn);
+        uint256 amountOutRounded = roundDownToNearestWhole(amountOutScaled);
+        uint256 amountOut = amountOutRounded / PRECISION;
 
-        uint256 amountInScaled = getAmountIn(amountOutAfterFee);
-        uint256 amountInRounded = roundUpToNearestWhole(amountInScaled);
-        uint256 amountIn = amountInRounded / PRECISION;
+        uint256 amountInCorrect = getAmountOut(amountOutRounded);
 
-        if (amountIn > amountInMax) revert("AmountIn too high");
+        uint256 feeAmount = (amountInCorrect * FEE) / ONE_HUNDRED;
+        uint256 amountInAfterFee = amountInCorrect + feeAmount;
 
-        uint256 amountOutCorrect = getAmountOut(amountInRounded);
+        uint256 amountInRouded = roundUpToNearestWhole(amountInAfterFee);
+        uint256 amountInSlippageFree = amountInRouded / PRECISION;
 
-        uint256 amountOutRounded = roundDownToNearestWhole(amountOutAfterFee);
-        uint256 amountOutSlippageFree = amountOutRounded / PRECISION;
+        if (amountOut <= 0) revert("Invalid output amount");
 
-        accumulatedFeePerLiquidityUnit += (feeAmount * PRECISION) / liquidity;
-        reserve0 += roundUpToNearestWhole(amountInScaledBefore) / PRECISION;
-        reserve1 -= amountOut;
+        accumulatedFeePerLiquidityUnitToken1 +=
+            (feeAmount * PRECISION) /
+            liquidity;
 
-        emit Swap(msg.sender, amountIn, amountOutSlippageFree);
+        reserve1 += scaledAmountIn / PRECISION;
+        reserve0 -= amountOut;
 
-        token0.safeTransferFrom(msg.sender, address(this), amountIn);
-        token1.safeTransfer(msg.sender, amountOutSlippageFree);
+        emit Swap(msg.sender, amountInSlippageFree, amountOut);
+
+        token1.safeTransferFrom(
+            msg.sender,
+            address(this),
+            amountInSlippageFree
+        );
+        token0.safeTransfer(msg.sender, amountOut);
     }
 
     /**
@@ -264,21 +298,31 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     function withdrawFees() external nonReentrant {
         uint256 liquidityToRemove = lpBalances[msg.sender];
 
-        uint256 feeShareScaled = ((accumulatedFeePerLiquidityUnit -
-            userEntryFeePerLiquidityUnit[msg.sender]) * liquidityToRemove) /
-            PRECISION;
-        uint256 feeShare = feeShareScaled / PRECISION;
-        if (feeShare <= 0) {
-            revert InsufficentFeesBalance();
+        uint256 feeShareScaledToken0 = ((accumulatedFeePerLiquidityUnitToken0 -
+            userEntryFeePerLiquidityUnitToken0[msg.sender]) *
+            liquidityToRemove) / PRECISION;
+        uint256 feeShareToken0 = feeShareScaledToken0 / PRECISION;
+        if (feeShareToken0 > 0) {
+            userEntryFeePerLiquidityUnitToken0[
+                msg.sender
+            ] = accumulatedFeePerLiquidityUnitToken0;
+            emit WithdrawFees(msg.sender, feeShareToken0);
+            token0.safeTransfer(msg.sender, feeShareToken0);
         }
 
-        userEntryFeePerLiquidityUnit[
-            msg.sender
-        ] = accumulatedFeePerLiquidityUnit;
+        uint256 feeShareScaledToken1 = ((accumulatedFeePerLiquidityUnitToken1 -
+            userEntryFeePerLiquidityUnitToken1[msg.sender]) *
+            liquidityToRemove) / PRECISION;
+        uint256 feeShareToken1 = feeShareScaledToken1 / PRECISION;
+        if (feeShareToken1 > 0) {
+            userEntryFeePerLiquidityUnitToken1[
+                msg.sender
+            ] = accumulatedFeePerLiquidityUnitToken1;
 
-        emit WithdrawFees(msg.sender, feeShare);
+            emit WithdrawFees(msg.sender, feeShareToken0);
 
-        token0.safeTransfer(msg.sender, feeShare);
+            token1.safeTransfer(msg.sender, feeShareToken1);
+        }
     }
 
     /**

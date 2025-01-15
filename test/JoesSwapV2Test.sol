@@ -156,7 +156,7 @@ contract JoesSwapV2Test is Test {
     }
 
     function test_swapToken1Amount_2() public {
-        uint256 swapAmount = 100;
+        uint256 swapAmount = 333;
         uint256 liquidityBefore = joesSwapV2.liquidity();
         uint256 reserve0Before = joesSwapV2.reserve0();
         uint256 reserve1Before = joesSwapV2.reserve1();
