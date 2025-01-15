@@ -79,7 +79,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     function initializePoolLiquidity(
         uint256 amount0,
         uint256 amount1
-    ) public onlyOwner {
+    ) external onlyOwner {
         if (poolInitialized) revert PoolAlreadyInitialized();
         uint256 amount0Scaled = amount0 * PRECISION;
         uint256 amount1Scaled = amount1 * PRECISION;
@@ -110,7 +110,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      * @param amount0 The amount of token0 to add to the pool.
      * @custom:modifier nonReentrant Function cannot be re-entered
      */
-    function addLiquidity(uint256 amount0) public nonReentrant {
+    function addLiquidity(uint256 amount0) external nonReentrant {
         uint256 amount0Scaled = amount0 * PRECISION;
 
         uint256 amount1Scaled = getAmountOut(amount0Scaled);
@@ -142,7 +142,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      * @custom:modifier nonReentrant Function cannot be re-entered.
      * @custom:revert InsufficentLiquidity if the caller has no liquidity in the pool.
      */
-    function removeLiquidity() public nonReentrant {
+    function removeLiquidity() external nonReentrant {
         uint256 liquidityToRemove = lpBalances[msg.sender];
         if (liquidityToRemove <= 0) {
             revert InsufficentLiquidity();
@@ -224,7 +224,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     function swapToken1Amount(
         uint256 amountOut,
         uint256 amountInMax
-    ) public nonReentrant {
+    ) external nonReentrant {
         uint256 scaledAmountOut = amountOut * PRECISION;
 
         uint256 amountInScaledBefore = getAmountIn(scaledAmountOut);
@@ -261,7 +261,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      * @custom:modifier nonReentrant Function cannot be re-entered
      * @custom:revert InsufficentFeesBalance if the calculated fee share is less than 0
      */
-    function withdrawFees() public nonReentrant {
+    function withdrawFees() external nonReentrant {
         uint256 liquidityToRemove = lpBalances[msg.sender];
 
         uint256 feeShareScaled = ((accumulatedFeePerLiquidityUnit -
