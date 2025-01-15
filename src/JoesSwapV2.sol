@@ -38,16 +38,16 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
-    event PoolInitialized(address sender, uint256 amount0, uint256 amount1);
-    event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
+    event PoolInitialized(address indexed sender, uint256 indexed amount0, uint256 indexed amount1);
+    event AddLiquidity(address indexed sender, uint256 indexed amount0, uint256 indexed amount1);
     event RemoveLiquidity(
-        address sender,
+        address indexed sender,
         uint256 liquidityToRemove,
-        uint256 amount0,
-        uint256 amount1
+        uint256 indexed amount0,
+        uint256 indexed amount1
     );
-    event Swap(address sender, uint256 amount0, uint256 amount1);
-    event WithdrawFees(address sender, uint256 feeAmount);
+    event Swap(address indexed sender, uint256 indexed amount0, uint256 indexed amount1);
+    event WithdrawFees(address indexed sender, uint256 indexed feeAmount);
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -287,7 +287,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      * @dev The function calculates and returns the token1 compared to token0 amount
      */
     function getAmountOut(uint256 amountIn) internal view returns (uint256) {
-        uint k = reserve0 * PRECISION * reserve1 * PRECISION;
+        uint256 k = reserve0 * PRECISION * reserve1 * PRECISION;
         uint256 newReserve0 = reserve0 * PRECISION + amountIn;
         uint256 newReserve1 = k / newReserve0;
 
@@ -300,7 +300,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      * @param amountOut The amount of token1
      */
     function getAmountIn(uint256 amountOut) internal view returns (uint256) {
-        uint k = reserve0 * PRECISION * reserve1 * PRECISION;
+        uint256 k = reserve0 * PRECISION * reserve1 * PRECISION;
         uint256 newReserve1 = reserve1 * PRECISION - amountOut;
         uint256 newReserve0 = k / newReserve1;
 
