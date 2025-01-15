@@ -6,8 +6,8 @@ import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
-/** 
- * @author Joesepherus   
+/**
+ * @author Joesepherus
  * @title JoesSwapV2
  * @dev Decentralized token swapping contract with liquidity provision and fee management.
  */
@@ -38,7 +38,12 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     //////////////////////////////////////////////////////////////*/
     event PoolInitialized(address sender, uint256 amount0, uint256 amount1);
     event AddLiquidity(address sender, uint256 amount0, uint256 amount1);
-    event RemoveLiquidity(address sender, uint256 liquidityToRemove, uint256 amount0, uint256 amount1);
+    event RemoveLiquidity(
+        address sender,
+        uint256 liquidityToRemove,
+        uint256 amount0,
+        uint256 amount1
+    );
     event Swap(address sender, uint256 amount0, uint256 amount1);
     event WithdrawFees(address sender, uint256 feeAmount);
 
@@ -60,7 +65,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
     /**
      * @notice Initializes the pool with the provided liquidity amounts of token0 and token1.
-     * @dev This function can only be called once and by the owner. 
+     * @dev This function can only be called once and by the owner.
      *      It transfers the specified amounts of token0 and token1 from the caller to the contract,
      *      calculates the new liquidity, updates reserves, and records the user's entry per liquidity unit.
      *      Emits a `PoolInitialized` event upon successful execution.
@@ -73,13 +78,10 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         uint256 amount0,
         uint256 amount1
     ) public onlyOwner {
-        if(poolInitialized) revert PoolAlreadyInitialized(); 
+        if (poolInitialized) revert PoolAlreadyInitialized();
         uint256 amount0Scaled = amount0 * PRECISION;
         uint256 amount1Scaled = amount1 * PRECISION;
         uint256 newLiquidity = sqrt(amount0Scaled * amount1Scaled);
-
-        token0.transferFrom(msg.sender, address(this), amount0);
-        token1.transferFrom(msg.sender, address(this), amount1);
 
         reserve0 += amount0;
         reserve1 += amount1;
@@ -91,6 +93,9 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         poolInitialized = true;
 
         emit PoolInitialized(msg.sender, amount0, amount1);
+
+        token0.transferFrom(msg.sender, address(this), amount0);
+        token1.transferFrom(msg.sender, address(this), amount1);
     }
 
     /**
@@ -111,9 +116,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         uint256 newLiquidity = sqrt(amount0Scaled * amount1Scaled);
 
-        token0.transferFrom(msg.sender, address(this), amount0);
-        token1.transferFrom(msg.sender, address(this), amount1);
-
         reserve0 += amount0;
         reserve1 += amount1;
 
@@ -123,6 +125,9 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         lpBalances[msg.sender] += newLiquidity;
 
         emit AddLiquidity(msg.sender, amount0, amount1);
+
+        token0.transferFrom(msg.sender, address(this), amount0);
+        token1.transferFrom(msg.sender, address(this), amount1);
     }
 
     /**
@@ -143,9 +148,6 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         uint256 amount0 = (reserve0 * liquidityToRemove) / liquidity;
         uint256 amount1 = (reserve1 * liquidityToRemove) / liquidity;
 
-        token0.transfer(msg.sender, amount0);
-        token1.transfer(msg.sender, amount1);
-
         reserve0 -= amount0;
         reserve1 -= amount1;
 
@@ -153,6 +155,9 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         lpBalances[msg.sender] -= liquidityToRemove;
 
         emit RemoveLiquidity(msg.sender, liquidityToRemove, amount0, amount1);
+
+        token0.transfer(msg.sender, amount0);
+        token1.transfer(msg.sender, amount1);
     }
 
     /**
@@ -188,14 +193,15 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         if (amountOut <= 0) revert("Invalid output amount");
 
-        token0.transferFrom(msg.sender, address(this), amountInSlippageFree);
-        token1.transfer(msg.sender, amountOut);
-
         accumulatedFeePerLiquidityUnit += (feeAmount * PRECISION) / liquidity;
 
         reserve0 += scaledAmountIn / PRECISION;
         reserve1 -= amountOut;
+
         emit Swap(msg.sender, amountInSlippageFree, amountOut);
+
+        token0.transferFrom(msg.sender, address(this), amountInSlippageFree);
+        token1.transfer(msg.sender, amountOut);
     }
 
     /**
@@ -213,7 +219,10 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      * @custom:modifier nonReentrant Function cannot be re-entered
      * @custom:revert "Invalid output amount" if the calculated amount of token1 is less than 0
      */
-    function swapToken1Amount(uint256 amountOut, uint256 amountInMax) public nonReentrant {
+    function swapToken1Amount(
+        uint256 amountOut,
+        uint256 amountInMax
+    ) public nonReentrant {
         uint256 scaledAmountOut = amountOut * PRECISION;
 
         uint256 amountInScaledBefore = getAmountIn(scaledAmountOut);
@@ -231,19 +240,19 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         uint256 amountOutRounded = roundDownToNearestWhole(amountOutAfterFee);
         uint256 amountOutSlippageFree = amountOutRounded / PRECISION;
 
-        token0.transferFrom(msg.sender, address(this), amountIn);
-        token1.transfer(msg.sender, amountOutSlippageFree);
-
         accumulatedFeePerLiquidityUnit += (feeAmount * PRECISION) / liquidity;
         reserve0 += roundUpToNearestWhole(amountInScaledBefore) / PRECISION;
         reserve1 -= amountOut;
 
         emit Swap(msg.sender, amountIn, amountOutSlippageFree);
+
+        token0.transferFrom(msg.sender, address(this), amountIn);
+        token1.transfer(msg.sender, amountOutSlippageFree);
     }
 
     /**
      * @notice Withdraws collected fees of the caller
-     * @dev The function calculates the callers share of the fee pool and 
+     * @dev The function calculates the callers share of the fee pool and
      *      transfers the fees from the pool to the caller.
      *      Updates the liquidity entry point for the the caller so he can't double spend.
      *      Emits a `WithdrawFees` event upon successful execution.
@@ -260,15 +269,20 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         if (feeShare <= 0) {
             revert InsufficentFeesBalance();
         }
-        token0.transfer(msg.sender, feeShare);
-        userEntryFeePerLiquidityUnit[msg.sender] = accumulatedFeePerLiquidityUnit;
+
+        userEntryFeePerLiquidityUnit[
+            msg.sender
+        ] = accumulatedFeePerLiquidityUnit;
+
         emit WithdrawFees(msg.sender, feeShare);
+
+        token0.transfer(msg.sender, feeShare);
     }
 
     /**
      * @notice Gets amount of token1 compared to amount token0
      * @param amountIn The amount of token0
-     * @dev The function calculates and returns the token1 compared to token0 amount 
+     * @dev The function calculates and returns the token1 compared to token0 amount
      */
     function getAmountOut(uint256 amountIn) internal view returns (uint256) {
         uint k = reserve0 * PRECISION * reserve1 * PRECISION;
@@ -280,8 +294,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
     /**
      * @notice Gets amount of token0 compared to amount token1
-     * @dev The function calculates and returns the token0 compared to token1 amount 
-     * @param amountOut The amount of token1 
+     * @dev The function calculates and returns the token0 compared to token1 amount
+     * @param amountOut The amount of token1
      */
     function getAmountIn(uint256 amountOut) internal view returns (uint256) {
         uint k = reserve0 * PRECISION * reserve1 * PRECISION;
@@ -294,8 +308,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     /**
      * @notice Helper function for rounding up numbers
      * @dev The function rounds up the provided number and returns it
-     * @param value The amount of token0 
-    */
+     * @param value The amount of token0
+     */
     function roundUpToNearestWhole(
         uint256 value
     ) internal pure returns (uint256) {
@@ -309,8 +323,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     /**
      * @notice Helper function for rounding up numbers
      * @dev The function rounds down the provided number and returns it
-     * @param value The amount of token0 
-    */
+     * @param value The amount of token0
+     */
     function roundDownToNearestWhole(
         uint256 value
     ) internal pure returns (uint256) {
@@ -322,7 +336,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      * @notice Helper function for calculating the square root of a number
      * @dev The function rounds up the provided number and returns it
      * @param x The number to calculate the square root for
-    */
+     */
     function sqrt(uint256 x) internal pure returns (uint256 y) {
         y = x;
         uint256 z = (x + 1) / 2;
