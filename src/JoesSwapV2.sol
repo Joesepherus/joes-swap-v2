@@ -177,17 +177,17 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
      * @custom:modifier nonReentrant Function cannot be re-entered
      * @custom:revert "Invalid output amount" if the calculated amount of token1 is less than 0
      */
-    function swapToken0Amount(uint256 amountIn) public nonReentrant {
+    function swapToken0Amount(uint256 amountIn) external nonReentrant {
         uint256 scaledAmountIn = amountIn * PRECISION;
 
         uint256 amountOutScaled = getAmountOut(scaledAmountIn);
-        if (amountOutScaled < 1e18) revert("Amount out too small");
+        if (amountOutScaled < PRECISION) revert("Amount out too small");
         uint256 amountOutRounded = roundDownToNearestWhole(amountOutScaled);
         uint256 amountOut = amountOutRounded / PRECISION;
 
         uint256 amountInCorrect = getAmountIn(amountOutRounded);
 
-        uint256 feeAmount = (amountInCorrect * FEE) / 100;
+        uint256 feeAmount = (amountInCorrect * FEE) / ONE_HUNDRED;
         uint256 amountInAfterFee = amountInCorrect + feeAmount;
 
         uint256 amountInRouded = roundUpToNearestWhole(amountInAfterFee);
@@ -315,9 +315,9 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
     function roundUpToNearestWhole(
         uint256 value
     ) internal pure returns (uint256) {
-        // If there's any remainder when dividing by 1e18, round up
-        if (value % 1e18 != 0) {
-            return ((value / 1e18) + 1) * 1e18;
+        // If there's any remainder when dividing by PRECISION, round up
+        if (value % PRECISION != 0) {
+            return ((value / PRECISION) + 1) * PRECISION;
         }
         return value;
     }
@@ -331,7 +331,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
         uint256 value
     ) internal pure returns (uint256) {
         // Divide and multiply to get the rounded down value
-        return (value / 1e18) * 1e18;
+        return (value / PRECISION) * PRECISION;
     }
 
     /**
