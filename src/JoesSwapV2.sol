@@ -5,6 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @author Joesepherus
@@ -12,11 +13,12 @@ import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
  * @dev Decentralized token swapping contract with liquidity provision and fee management.
  */
 contract JoesSwapV2 is ReentrancyGuard, Ownable {
+    using SafeERC20 for IERC20;
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    IERC20 public token0;
-    IERC20 public token1;
+    IERC20 public immutable token0;
+    IERC20 public immutable token1;
     uint256 public reserve0;
     uint256 public reserve1;
     uint256 public liquidity;
@@ -94,8 +96,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         emit PoolInitialized(msg.sender, amount0, amount1);
 
-        token0.transferFrom(msg.sender, address(this), amount0);
-        token1.transferFrom(msg.sender, address(this), amount1);
+        token0.safeTransferFrom(msg.sender, address(this), amount0);
+        token1.safeTransferFrom(msg.sender, address(this), amount1);
     }
 
     /**
@@ -126,8 +128,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         emit AddLiquidity(msg.sender, amount0, amount1);
 
-        token0.transferFrom(msg.sender, address(this), amount0);
-        token1.transferFrom(msg.sender, address(this), amount1);
+        token0.safeTransferFrom(msg.sender, address(this), amount0);
+        token1.safeTransferFrom(msg.sender, address(this), amount1);
     }
 
     /**
@@ -156,8 +158,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         emit RemoveLiquidity(msg.sender, liquidityToRemove, amount0, amount1);
 
-        token0.transfer(msg.sender, amount0);
-        token1.transfer(msg.sender, amount1);
+        token0.safeTransfer(msg.sender, amount0);
+        token1.safeTransfer(msg.sender, amount1);
     }
 
     /**
@@ -200,8 +202,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         emit Swap(msg.sender, amountInSlippageFree, amountOut);
 
-        token0.transferFrom(msg.sender, address(this), amountInSlippageFree);
-        token1.transfer(msg.sender, amountOut);
+        token0.safeTransferFrom(msg.sender, address(this), amountInSlippageFree);
+        token1.safeTransfer(msg.sender, amountOut);
     }
 
     /**
@@ -246,8 +248,8 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         emit Swap(msg.sender, amountIn, amountOutSlippageFree);
 
-        token0.transferFrom(msg.sender, address(this), amountIn);
-        token1.transfer(msg.sender, amountOutSlippageFree);
+        token0.safeTransferFrom(msg.sender, address(this), amountIn);
+        token1.safeTransfer(msg.sender, amountOutSlippageFree);
     }
 
     /**
@@ -276,7 +278,7 @@ contract JoesSwapV2 is ReentrancyGuard, Ownable {
 
         emit WithdrawFees(msg.sender, feeShare);
 
-        token0.transfer(msg.sender, feeShare);
+        token0.safeTransfer(msg.sender, feeShare);
     }
 
     /**
