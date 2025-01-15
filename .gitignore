@@ -17,5 +17,5 @@ node_modules
 .prettierrc
 package.json
 package-lock.json
-
+.slither.config.json
 
