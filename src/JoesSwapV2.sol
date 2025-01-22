@@ -8,8 +8,8 @@ import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * @author Joesepherus
  * @title JoesSwapV2
+ * @author Joesepherus
  * @dev Decentralized token swapping contract with liquidity provision and fee management.
  */
 contract JoesSwapV2 is ReentrancyGuard, Ownable {
