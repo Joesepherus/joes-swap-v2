@@ -13,8 +13,8 @@ This is a very basic implementation of a Decentralized Exchange using Solidity a
 7. Add natspec
 
 ## Where this can be improved
-3. Make the swaps non-linear
-4. Hand out LP tokens to liquidity providers
-8. Add checks
+1. Make the swaps non-linear
+2. Hand out LP tokens to liquidity providers
+3. Add checks
 
 
